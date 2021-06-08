@@ -1,6 +1,6 @@
 {
 	"name": "syllid",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "multi-channel multi-stream audio decoder and player",
 	"main": "build/syllid.js",
 	"scripts": {
@@ -22,12 +22,12 @@
 	},
 	"bugs": {
 		"email": "email@drohen.com",
-		"url": "https://github.com/gaxge/syllid/issues"
+		"url": "https://github.com/splutter/syllid/issues"
 	},
 	"repository": {
-		"url": "https://github.com/gaxge/syllid.git"
+		"url": "https://github.com/splutter/syllid.git"
 	},
-	"homepage": "https://github.com/gaxge/syllid",
+	"homepage": "https://github.com/splutter/syllid",
 	"types": "build/syllid.d.ts",
 	"files": [
 		"build/"
