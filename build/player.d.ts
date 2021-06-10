@@ -1,22 +1,15 @@
-export interface PlayerHandler {
-    onWarning: (error: string | Error) => void;
-}
 export declare class Player {
-    private sampleRate;
-    private handler;
     channels: number;
-    private flushingTime;
-    private merger;
-    private samples;
-    private startTimes;
-    private interval;
-    private buffers;
     private ctx;
-    constructor(sampleRate: number, handler: PlayerHandler);
-    private flush;
+    private worklet?;
+    constructor();
+    private bindFns;
+    private createWorkerScriptBlob;
     feed(channel: number, data: Float32Array): void;
+    private bufferMessage;
     stopChannel(channel: number): void;
+    private stateMessage;
     stop(): void;
-    init(): void;
+    init(): Promise<void>;
 }
 //# sourceMappingURL=player.d.ts.map

@@ -1,39 +1,39 @@
-export interface PlayerHandler
+import worker from "./playerWorklet"
+
+/**
+ * Single worker node
+ * Worker receives data for
+ * - channel playing state
+ * - buffers for channel
+ * 
+ * When channel is stopped, just copy 0s
+ * When channel playing but buffer is empty, just copy almost silent randoms
+ * When channel is playing and buffer is available
+ * - get current buffer file
+ * - get current buffer index
+ * - get next non 0 value
+ * - if new buffer file, fade in values
+ * - if end of buffer (sequence of 0 values > 10), fade out values
+ * - copy values to output for channel
+ */
+
+enum MessageType
 {
-	onWarning: ( error: string | Error ) => void
+	state = `state`,
+	buffer = `buffer`
 }
 
 export class Player
 {
 	public channels: number
 
-	private flushingTime = 200
-
-	private merger: ChannelMergerNode
-
-	private samples: Float32Array[]
-
-	private startTimes: number[]
-
-	private interval: number
-
-	private buffers: ( AudioBufferSourceNode | undefined )[][]
-
 	private ctx: AudioContext
 
-	constructor( private sampleRate: number, private handler: PlayerHandler )
+	private worklet?: AudioWorkletNode
+
+	constructor()
 	{
-		this.init = this.init.bind( this )
-
-		this.flush = this.flush.bind( this )
-
-		this.feed = this.feed.bind( this )
-
-		this.stop = this.stop.bind( this )
-
-		this.stopChannel = this.stopChannel.bind( this )
-
-		this.flushingTime = 200
+		this.bindFns()
 
 		this.ctx = new ( window.AudioContext || window.webkitAudioContext )()
 
@@ -43,130 +43,69 @@ export class Player
 
 		this.channels = Math.max( maxChannelCount, channelCount )
 
-		this.samples = Array( this.channels )
-			.fill( 0 )
-			.map( () => new Float32Array( 0 ) )
-
-		this.startTimes = Array( this.channels ).fill( this.ctx.currentTime )
-
-		this.interval = 0
-
-		this.buffers = Array( this.channels ).fill( [] )
-		
 		if ( maxChannelCount > channelCount ) this.ctx.destination.channelCount = this.channels
 
 		this.ctx.destination.channelInterpretation = `discrete`
-
-		this.merger = this.ctx.createChannelMerger( this.channels )
-
-		this.merger.connect( this.ctx.destination )
 	}
 
-	private flush(): void
+	private bindFns()
 	{
-		for ( let channel = 0; channel < this.channels; channel++ ) 
-		{
-			const s = this.samples[ channel ]
-
-			this.samples[ channel ] = new Float32Array( 0 )
-
-			if ( !s.length ) continue
+		this.init = this.init.bind( this )
 		
-			const bufferSource = this.ctx.createBufferSource()
-
-			const audioBuffer = this.ctx.createBuffer(
-				1,
-				s.length,
-				this.sampleRate
-			)
+		this.feed = this.feed.bind( this )
 		
-			const audioData = audioBuffer.getChannelData( 0 )
-
-			audioData.set( s, 0 )
+		this.stop = this.stop.bind( this )
 		
-			if ( this.startTimes[ channel ] < this.ctx.currentTime ) 
-			{
-				this.startTimes[ channel ] = this.ctx.currentTime
-			}
-		
-			bufferSource.buffer = audioBuffer
+		this.stopChannel = this.stopChannel.bind( this )
+	}
 
-			bufferSource.connect( this.merger, 0, channel )
-		
-			bufferSource.start( this.startTimes[ channel ] )
+	private createWorkerScriptBlob( script: string ): URL
+	{
+		const blob = new Blob( [ script ], { type: `text/javascript` } )
 
-			const index = this.buffers[ channel ].length
-
-			bufferSource.addEventListener( `ended`, (): void => 
-			{
-				this.buffers[ channel ][ index ] = undefined
-
-				try 
-				{
-					bufferSource.disconnect( this.merger, 0, channel )
-				}
-				catch ( e ) 
-				{
-					this.handler.onWarning( `Buffer not disconnected on end ${channel}` )
-
-					this.handler.onWarning( e )
-				}
-			} )
-
-			this.buffers[ channel ].push( bufferSource )
-
-			this.startTimes[ channel ] += audioBuffer.duration
-		}
+		return new URL( URL.createObjectURL( blob ), import.meta.url )
 	}
 
 	public feed( channel: number, data: Float32Array ): void
 	{
-		const tmp: Float32Array = new Float32Array(
-			this.samples[ channel ].length + data.length
-		)
+		this.worklet?.port.postMessage( this.bufferMessage( channel, data ), [ data.buffer ] )
+	}
 
-		tmp.set( this.samples[ channel ], 0 )
-
-		tmp.set( data, this.samples[ channel ].length )
-
-		this.samples[ channel ] = tmp
+	private bufferMessage( channel: number, data: Float32Array ): BufferMessage
+	{
+		return {
+			buffer: data,
+			channel,
+			type: MessageType.buffer
+		}
 	}
 
 	public stopChannel( channel: number ): void
 	{
-		for ( const buffer of this.buffers[ channel ] )
-		{
-			try
-			{
-				if ( !buffer ) continue
+		this.worklet?.port.postMessage( this.stateMessage( channel ) )
+	}
 
-				buffer.stop( this.ctx.currentTime )
-			}
-			catch ( e )
-			{
-				this.handler.onWarning( `Buffer not disconnected on stop ${channel}` )
-
-				this.handler.onWarning( e )
-			}
+	private stateMessage( channel: number ): StateMessage
+	{
+		return {
+			channel,
+			state: false,
+			type: MessageType.state
 		}
-
-		this.samples[ channel ] = new Float32Array( 0 )
 	}
 
 	public stop(): void
 	{
-		clearInterval( this.interval )
-
-		this.interval = 0
-
 		this.ctx.suspend()
 	}
 
-	public init(): void
+	public async init(): Promise<void>
 	{
-		clearInterval( this.interval )
+		await this.ctx.audioWorklet.addModule( this.createWorkerScriptBlob( worker ).toString() )
 
-		this.interval = window.setInterval( this.flush, this.flushingTime )
+		this.worklet = new AudioWorkletNode( this.ctx, `playerWorklet`, { outputChannelCount: [ this.channels ] } )
+
+		this.worklet.connect( this.ctx.destination )
 
 		this.ctx.resume()
 	}
