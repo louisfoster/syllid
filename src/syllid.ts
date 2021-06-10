@@ -1,5 +1,5 @@
 import { ListProcessor, ListProcessorHandler } from "./listProcessor"
-import { Player, PlayerHandler } from "./player"
+import { Player } from "./player"
 import { ChannelStream, StreamHandler } from "./channelStream"
 
 export interface SyllidContextInterface
@@ -11,7 +11,7 @@ export interface SyllidContextInterface
 	onFailure: ( error: string | Error | ErrorEvent ) => void
 }
 
-export class Syllid implements StreamHandler, ListProcessorHandler, PlayerHandler
+export class Syllid implements StreamHandler, ListProcessorHandler
 {
 	private locations: string[]
 
@@ -41,7 +41,7 @@ export class Syllid implements StreamHandler, ListProcessorHandler, PlayerHandle
 
 		this.urlLocationMap = {}
 
-		this.player = new Player( this.context.sampleRate(), this )
+		this.player = new Player()
 
 		this.processor = new ListProcessor( this )
 

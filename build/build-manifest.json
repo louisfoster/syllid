@@ -30,16 +30,29 @@
         }
       ]
     },
-    "player.js": {
-      "bytes": 3136,
+    "playerWorklet.js": {
+      "bytes": 2028,
       "imports": []
+    },
+    "player.js": {
+      "bytes": 1859,
+      "imports": [
+        {
+          "path": "__snowpack__/env.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "playerWorklet.js",
+          "kind": "import-statement"
+        }
+      ]
     },
     "channelStream.js": {
       "bytes": 2152,
       "imports": []
     },
     "syllid.js": {
-      "bytes": 3293,
+      "bytes": 3262,
       "imports": [
         {
           "path": "listProcessor.js",
@@ -76,17 +89,20 @@
         "listProcessor.js": {
           "bytesInOutput": 737
         },
+        "playerWorklet.js": {
+          "bytesInOutput": 1999
+        },
         "player.js": {
-          "bytesInOutput": 2066
+          "bytesInOutput": 1216
         },
         "channelStream.js": {
           "bytesInOutput": 1506
         },
         "syllid.js": {
-          "bytesInOutput": 2072
+          "bytesInOutput": 2040
         }
       },
-      "bytes": 212540
+      "bytes": 213657
     }
   }
 }

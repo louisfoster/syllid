@@ -1,0 +1,22 @@
+{
+	"mount": {
+		"src": "/"
+	},
+	"plugins": [
+		[
+			"@snowpack/plugin-run-script",
+			{
+				"cmd": "tsc",
+				"watch": "$1 --watch"
+			}
+		]
+	],
+	"experiments": {
+		"optimize": {
+			"entrypoints": ["playerWorklet.js"],
+			"bundle": true,
+			"minify": true,
+			"target": "es2020"
+		}
+	}
+}
