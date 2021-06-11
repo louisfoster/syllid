@@ -133,11 +133,20 @@ class PlayerWorklet extends AudioWorkletProcessor
 				}
 				else if ( !ref.totalBuffers || !ref[ ref.currentBuffer ] )
 				{
-					channel[ dataIndex ] = Math.random() * 0.0001
+					channel[ dataIndex ] = Math.random() * 0.001
 				}
 				else
 				{
+					// If we are < 100 from end of buffer, add beginning of new buffer
 					channel[ dataIndex ] = ref[ ref.currentBuffer ][ ref.bufferCursor ]
+
+					if ( ref.bufferCursor > ref[ ref.currentBuffer ].length - 2000
+							&& ref[ ref.currentBuffer + 1 ] )
+					{
+						const i = 2000 - ( ref[ ref.currentBuffer ].length - ref.bufferCursor )
+
+						channel[ dataIndex ] += ref[ ref.currentBuffer + 1 ][ i ]
+					}
 
 					ref.bufferCursor += 1
 
@@ -147,7 +156,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 						// Delete used buffer
 						delete ref[ ref.currentBuffer ]
 
-						ref.bufferCursor = 0
+						ref.bufferCursor = 2000
 
 						ref.currentBuffer += 1
 					}

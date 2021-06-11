@@ -37,16 +37,31 @@ const ids2 = [
 
 const mapped2 = ids2.reduce((obj, curr, i) => ({...obj, [curr]: i}), {})
 
+const data = [
+	{
+		ids,
+		mapped,
+		path: 'example/audio'
+	},
+	{
+		ids: ids2,
+		mapped: mapped2,
+		path: 'example/audio2'
+	}
+]
+
+const selected = 1
+
 const streamPublicID = `12345`
 
-const urls = ids2.map(segmentID =>
+const urls = data[selected].ids.map(segmentID =>
 	({
 		streamPublicID,
 		segmentID,
 		segmentURL: `http://localhost:${PORT}/audio/${segmentID}.opus`
 	}))
 
-const fromID = id => [...urls.slice(mapped2[id]), ...urls.slice(0, mapped2[id])]
+const fromID = id => [...urls.slice(data[selected].mapped[id]), ...urls.slice(0, data[selected].mapped[id])]
 
 const app = express()
 
@@ -54,7 +69,7 @@ app.use(express.static('example'))
 
 app.use('/build', express.static('build'))
 
-app.use('/audio', express.static('example/audio2'))
+app.use('/audio', express.static(data[selected].path))
 
 app.get('/decoderWorker.min.wasm', (req, res) => res.redirect(`/build/decoderWorker.min.wasm`))
 
@@ -66,7 +81,7 @@ app.get('/playlist/:id', (req, res) =>
 app.get('/playlist', (req, res) =>
 {
 	if (req.query.start === `random`)
-		res.json(fromID(ids2[Math.floor(Math.random() * ids2.length)]))
+		res.json(fromID(data[selected].ids[Math.floor(Math.random() * data[selected].ids.length)]))
 	else res.json(urls)
 })
 

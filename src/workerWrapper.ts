@@ -167,7 +167,7 @@ export class WorkerWrapper
 	 */
 	private fadeBuffer( buffer: Float32Array )
 	{
-		const milli = 100
+		const milli = 2000
 
 		for( let i = 0; i < milli; i += 1 )
 		{
