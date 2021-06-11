@@ -85,64 +85,6 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.channels[ data.channel ].state = data.state
 	}
 
-	/**
-	 * Decoded data often has a bunch of 0s at the start and end,
-	 * this finds the first index of non-0s or last index before 0s
-	 */
-	private getIndex( buffer: Float32Array, direction: `start` | `end` ): number
-	{
-		let seqCount = 0
-
-		let seqStart = -1
-
-		for ( let i = 0; i < buffer.length; i += 1 )
-		{
-			const index = direction === `start` ? i : buffer.length - 1 - i
-
-			if ( buffer[ index ] === 0 )
-			{
-				seqCount = 0
-
-				seqStart = -1
-
-				continue
-			}
-			else if ( seqCount === 9 )
-			{
-				break
-			}
-			else
-			{
-				seqCount += 1
-
-				seqStart = seqStart === -1 ? index : seqStart
-			}
-		}
-
-		return seqStart
-	}
-
-	/**
-	 * To prevent popping between uneven buffers, add a tiny fade in
-	 * at the beginning and fade out at the end
-	 */
-	private fadeBuffer( buffer: Float32Array )
-	{
-		const milli = 100
-
-		// FADE IN
-		for( let i = 0; i < milli; i += 1 )
-		{
-			buffer[ i ] = ( buffer[ i ] * i / milli )
-		}
-
-		// FADE OUT
-		for( let i = 0; i > buffer.length - milli; i -= 1 )
-		{
-			buffer[ i ] = ( buffer[ i ] - ( buffer[ i ] * i / milli ) )
-		}
-	}
-
 	private handleBuffer( data: Message )
 	{
 		// Wrong type
@@ -159,16 +101,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 		{
 			this.channels[ data.channel ].state = true
 		}
-
-		const offsetStart = this.getIndex( data.buffer, `start` )
-
-		const offsetEnd = this.getIndex( data.buffer, `end` )
-
-		const buffer = new Float32Array( data.buffer.subarray( offsetStart, offsetEnd + 1 ) )
-
-		this.fadeBuffer( buffer )
 		
-		this.channels[ data.channel ][ this.channels[ data.channel ].totalBuffers ] = buffer
+		this.channels[ data.channel ][ this.channels[ data.channel ].totalBuffers ] = data.buffer
 
 		this.channels[ data.channel ].totalBuffers += 1
 	}
@@ -199,11 +133,20 @@ class PlayerWorklet extends AudioWorkletProcessor
 				}
 				else if ( !ref.totalBuffers || !ref[ ref.currentBuffer ] )
 				{
-					channel[ dataIndex ] = Math.random() * 0.0001
+					channel[ dataIndex ] = Math.random() * 0.001
 				}
 				else
 				{
+					// If we are < 100 from end of buffer, add beginning of new buffer
 					channel[ dataIndex ] = ref[ ref.currentBuffer ][ ref.bufferCursor ]
+
+					if ( ref.bufferCursor > ref[ ref.currentBuffer ].length - 2000
+							&& ref[ ref.currentBuffer + 1 ] )
+					{
+						const i = 2000 - ( ref[ ref.currentBuffer ].length - ref.bufferCursor )
+
+						channel[ dataIndex ] += ref[ ref.currentBuffer + 1 ][ i ]
+					}
 
 					ref.bufferCursor += 1
 
@@ -213,7 +156,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 						// Delete used buffer
 						delete ref[ ref.currentBuffer ]
 
-						ref.bufferCursor = 0
+						ref.bufferCursor = 2000
 
 						ref.currentBuffer += 1
 					}

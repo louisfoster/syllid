@@ -9,7 +9,7 @@
       "imports": []
     },
     "workerWrapper.js": {
-      "bytes": 1618,
+      "bytes": 3348,
       "imports": [
         {
           "path": "__snowpack__/env.js",
@@ -31,7 +31,7 @@
       ]
     },
     "playerWorklet.js": {
-      "bytes": 2028,
+      "bytes": 1792,
       "imports": []
     },
     "player.js": {
@@ -84,13 +84,13 @@
           "bytesInOutput": 205150
         },
         "workerWrapper.js": {
-          "bytesInOutput": 933
+          "bytesInOutput": 1784
         },
         "listProcessor.js": {
           "bytesInOutput": 737
         },
         "playerWorklet.js": {
-          "bytesInOutput": 1999
+          "bytesInOutput": 1763
         },
         "player.js": {
           "bytesInOutput": 1216
@@ -102,7 +102,7 @@
           "bytesInOutput": 2040
         }
       },
-      "bytes": 213657
+      "bytes": 214272
     }
   }
 }
