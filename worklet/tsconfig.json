@@ -35,13 +35,6 @@
 	},
 	"include": [
 		"src/playerWorklet.ts",
-		"../typings"
-	],
-	"exclude": [
-		"../node_modules",
-		"../example/server",
-		"../worklet",
-		"../modules",
-		"../src"
+		"typings"
 	]
 }
