@@ -52,7 +52,7 @@
       "imports": []
     },
     "syllid.js": {
-      "bytes": 3262,
+      "bytes": 3360,
       "imports": [
         {
           "path": "listProcessor.js",
@@ -99,10 +99,10 @@
           "bytesInOutput": 1506
         },
         "syllid.js": {
-          "bytesInOutput": 2040
+          "bytesInOutput": 2100
         }
       },
-      "bytes": 214272
+      "bytes": 214332
     }
   }
 }
