@@ -1,3 +1,4 @@
+import "audioworklet-polyfill";
 export declare class Player {
     channels: number;
     private ctx;

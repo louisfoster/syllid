@@ -1,4 +1,5 @@
 import worker from "./playerWorklet"
+import "audioworklet-polyfill"
 
 /**
  * Single worker node
