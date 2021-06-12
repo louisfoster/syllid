@@ -23,6 +23,8 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 
 	private processor: ListProcessor
 
+	private initialised: boolean
+
 	/**
 	 * 
 	 * @param context Interface to the context importing this lib
@@ -49,7 +51,7 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 
 		this.createStreams()
 
-		this.player.init()
+		this.initialised = false
 	}
 
 	private createStreams(): void 
@@ -151,6 +153,13 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 
 	public playChannel( index: number ): void
 	{
+		if ( !this.initialised )
+		{
+			this.initialised = true
+
+			this.player.init()
+		}
+		
 		this.streams[ index ].start()
 	}
 

@@ -12,6 +12,7 @@ export declare class Syllid implements StreamHandler, ListProcessorHandler {
     private streams;
     private player;
     private processor;
+    private initialised;
     /**
      *
      * @param context Interface to the context importing this lib

@@ -50,7 +50,7 @@ const data = [
 	}
 ]
 
-const selected = 1
+const selected = 0
 
 const streamPublicID = `12345`
 
