@@ -1,3 +1,5 @@
+declare module 'audioworklet-polyfill'
+
 interface AudioWorkletProcessor
 {
 	readonly port: MessagePort;
@@ -21,7 +23,6 @@ declare function registerProcessor(
 		parameterDescriptors?: AudioParamDescriptor[];
 	}
 ): undefined;
-
 
 interface StateMessage
 {
