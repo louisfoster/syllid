@@ -135,7 +135,8 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 			} )
 			.then( ( items: Playlist ) => 
 				this.validatePlaylist( items )
-					.slice( 0, this.randomInt( 0, items.length ) ) )
+					// loop is every 3 seconds, so it should be at least 3 samples
+					.slice( 0, this.randomInt( 3, items.length ) ) )
 			.then( items => stream.addItemsFromPlaylist( items ) )
 			.catch( ( e: Error ) => this.context.onWarning( e.message ) )
 	}

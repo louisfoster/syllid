@@ -31,7 +31,7 @@
       ]
     },
     "playerWorklet.js": {
-      "bytes": 2024,
+      "bytes": 2254,
       "imports": []
     },
     "web_modules/audioworklet-polyfill.js": {
@@ -39,7 +39,7 @@
       "imports": []
     },
     "player.js": {
-      "bytes": 2789,
+      "bytes": 2770,
       "imports": [
         {
           "path": "__snowpack__/env.js",
@@ -98,13 +98,13 @@
           "bytesInOutput": 737
         },
         "playerWorklet.js": {
-          "bytesInOutput": 1995
+          "bytesInOutput": 2225
         },
         "web_modules/audioworklet-polyfill.js": {
           "bytesInOutput": 2254
         },
         "player.js": {
-          "bytesInOutput": 1880
+          "bytesInOutput": 1863
         },
         "channelStream.js": {
           "bytesInOutput": 1506
@@ -113,7 +113,7 @@
           "bytesInOutput": 2100
         }
       },
-      "bytes": 217482
+      "bytes": 217695
     }
   }
 }

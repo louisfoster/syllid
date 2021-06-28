@@ -70,7 +70,7 @@ export class Player
 		{
 			this.gain[ n ] = this.ctx.createGain()
 
-			this.gain[ n ].gain.setValueAtTime( 0.000000001, 0 )
+			this.gain[ n ].gain.setValueAtTime( 0, 0 )
 
 			this.gain[ n ].connect( this.merger, 0, n )
 
@@ -106,7 +106,7 @@ export class Player
 		{
 			this.channelState[ channel ] = true
 
-			this.gain[ channel ].gain.exponentialRampToValueAtTime( 1, this.ctx.currentTime + 0.5 )
+			this.gain[ channel ].gain.linearRampToValueAtTime( 1.0, this.ctx.currentTime + 1 )
 		}
 	}
 
@@ -124,10 +124,10 @@ export class Player
 		if ( !this.channelState[ channel ] ) return
 		
 		this.channelState[ channel ] = false
-		
-		this.gain[ channel ].gain.exponentialRampToValueAtTime( 0.000000001, this.ctx.currentTime + 0.5 )
 
-		setTimeout( () => this.worklet?.port.postMessage( this.stateMessage( channel ) ), 500 )
+		this.gain[ channel ].gain.linearRampToValueAtTime( 0, this.ctx.currentTime + 1 )
+
+		setTimeout( () => this.worklet?.port.postMessage( this.stateMessage( channel ) ), 1500 )
 	}
 
 	private stateMessage( channel: number ): StateMessage
