@@ -154,7 +154,6 @@ class PlayerWorklet extends AudioWorkletProcessor
 				if ( !ref.state // not playing
 					|| !ref.totalBuffers // no buffers
 					|| !ref[ ref.currentBuffer ] // no current buffer
-					|| ( ref.totalBuffers - ref.currentBuffer ) < 5 // less than 10 buffers avail
 				)
 				{
 					channelBuffer.fill( 0 )
@@ -178,7 +177,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 					// If we are < 2000 from end of buffer, add beginning of new buffer
 					if ( ref.bufferCursor > ref[ ref.currentBuffer ].length - 2000
 						&& ref[ ref.currentBuffer + 1 ]
-						&& ( ref.totalBuffers - ref.currentBuffer - 1 ) >= 5 )
+					)
 					{
 						const i = 2000 - ( ref[ ref.currentBuffer ].length - ref.bufferCursor )
 

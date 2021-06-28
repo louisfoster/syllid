@@ -74,7 +74,7 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 		return Math.floor( Math.random() * ( to - from ) + from )
 	}
 
-	private validatePlaylist( items: Playlist ): Playlist 
+	private validatePlaylist( items: Playlist ): Playlist
 	{
 		if ( !Array.isArray( items ) ) 
 		{
