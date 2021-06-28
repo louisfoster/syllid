@@ -31,7 +31,7 @@
       ]
     },
     "playerWorklet.js": {
-      "bytes": 1792,
+      "bytes": 1802,
       "imports": []
     },
     "web_modules/audioworklet-polyfill.js": {
@@ -98,7 +98,7 @@
           "bytesInOutput": 737
         },
         "playerWorklet.js": {
-          "bytesInOutput": 1763
+          "bytesInOutput": 1773
         },
         "web_modules/audioworklet-polyfill.js": {
           "bytesInOutput": 2254
@@ -113,7 +113,7 @@
           "bytesInOutput": 2100
         }
       },
-      "bytes": 216586
+      "bytes": 216596
     }
   }
 }
