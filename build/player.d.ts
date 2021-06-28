@@ -3,6 +3,10 @@ export declare class Player {
     channels: number;
     private ctx;
     private worklet?;
+    private splitter;
+    private merger;
+    private gain;
+    private channelState;
     constructor();
     private bindFns;
     private createWorkerScriptBlob;

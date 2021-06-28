@@ -54,6 +54,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.handleBuffer = this.handleBuffer.bind( this )
 
 		this.process = this.process.bind( this )
+
+		this.onEndProcess = this.onEndProcess.bind( this )
 	}
 
 	private newChannelItem(): ChannelData
@@ -107,6 +109,19 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.channels[ data.channel ].totalBuffers += 1
 	}
 
+	// Clean up tasks
+	private onEndProcess()
+	{
+		for ( let i = 0; i < this.channels.length; i += 1 ) 
+		{
+			if ( !this.channels[ i ].state && this.channels[ i ].totalBuffers > 0 )
+			{
+				// Reset channel if stopped
+				this.channels[ i ] = this.newChannelItem()
+			}
+		}
+	}
+
 	/**
 	 * Output matrix:
 	 * - First dimension is an output in a list of outputs, in this case, just 1
@@ -121,29 +136,29 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 		for ( let channelIndex = 0; channelIndex < max; channelIndex += 1 ) 
 		{
-			const channel = output[ channelIndex ]
+			const channelBuffer = output[ channelIndex ]
 
 			const ref = this.channels[ channelIndex ]
 
 			// No data for channel buffer
 			if ( !ref.state || !ref.totalBuffers || !ref[ ref.currentBuffer ] )
 			{
-				channel.fill( 0 )
+				channelBuffer.fill( 0 )
 
 				continue
 			}
 
-			for ( let dataIndex = 0; dataIndex < channel.length; dataIndex += 1 ) 
+			for ( let dataIndex = 0; dataIndex < channelBuffer.length; dataIndex += 1 ) 
 			{
-				// If we are < 100 from end of buffer, add beginning of new buffer
-				channel[ dataIndex ] = ref[ ref.currentBuffer ][ ref.bufferCursor ]
+				channelBuffer[ dataIndex ] = ref[ ref.currentBuffer ][ ref.bufferCursor ]
 
+				// If we are < 2000 from end of buffer, add beginning of new buffer
 				if ( ref.bufferCursor > ref[ ref.currentBuffer ].length - 2000
 						&& ref[ ref.currentBuffer + 1 ] )
 				{
 					const i = 2000 - ( ref[ ref.currentBuffer ].length - ref.bufferCursor )
 
-					channel[ dataIndex ] += ref[ ref.currentBuffer + 1 ][ i ]
+					channelBuffer[ dataIndex ] += ref[ ref.currentBuffer + 1 ][ i ]
 				}
 
 				ref.bufferCursor += 1
@@ -160,6 +175,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 				}
 			}
 		}
+
+		this.onEndProcess()
 
 		return true
 	}
