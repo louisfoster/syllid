@@ -23,7 +23,7 @@ export declare class Syllid implements StreamHandler, ListProcessorHandler {
     randomInt(from: number, to: number): number;
     private validatePlaylist;
     private addSlash;
-    getSegmentURLs(stream: ChannelStream): void;
+    getSegmentURLs(stream: ChannelStream): Promise<number>;
     bufferSegmentData(fetchList: string[], index: number): Promise<void>;
     onBuffer(buffer: Float32Array, index: number): void;
     playChannel(index: number): void;

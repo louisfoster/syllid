@@ -1,13 +1,15 @@
 export interface StreamHandler
 {
 	bufferSegmentData: ( fileList: string[], index: number ) => Promise<void>
+
+	onWarning: ( message: string | Error | ErrorEvent ) => void
 }
 
 export interface StreamProvider
 {
 	randomInt: ( min: number, max: number ) => number
 
-	getSegmentURLs: ( stream: ChannelStream ) => void
+	getSegmentURLs: ( stream: ChannelStream ) => Promise<number>
 }
 
 export class ChannelStream
@@ -30,6 +32,8 @@ export class ChannelStream
 
 	public fetchInterval: number
 
+	private errors: number
+
 	constructor(
 		private index: number,
 		private handler: StreamHandler,
@@ -40,6 +44,8 @@ export class ChannelStream
 		this.stop = this.stop.bind( this )
 
 		this.processURLs = this.processURLs.bind( this )
+
+		this.errors = 0
 		
 		this.count = 0
 
@@ -70,18 +76,36 @@ export class ChannelStream
 		return _url.toString()
 	}
 
+	private getSegments()
+	{
+		this.provider.getSegmentURLs( this )
+			.then( count =>
+			{
+				this.errors = 0
+
+				this.interval = window.setTimeout( () => 
+					this.getSegments(), Math.max( 0, count * 1000 - 1000 ) )
+			} )
+			.catch( e =>
+			{
+				this.errors += 1
+
+				this.handler.onWarning( e )
+
+				this.interval = window.setTimeout( () => 
+					this.getSegments(), Math.round( Math.exp( this.errors ) * 100 ) )
+			} )
+	}
+
 	public start(): void
 	{
 		if ( this.running ) return
 		
 		this.running = true
 
-		this.provider.getSegmentURLs( this )
+		this.getSegments()
 
 		this.processURLs()
-
-		this.interval = window.setInterval( () => 
-			this.provider.getSegmentURLs( this ), 3000 )
 
 		this.fetchInterval = window.setInterval( () => 
 			this.processURLs(), 1000 )
@@ -107,6 +131,16 @@ export class ChannelStream
 		clearInterval( this.interval )
 
 		clearInterval( this.fetchInterval )
+
+		this.fileList = []
+
+		this.idList = []
+
+		this.processedIndex = 0
+
+		this.location = ``
+
+		this.count = 0
 
 		this.running = false
 	}
@@ -150,7 +184,7 @@ export class ChannelStream
 		}
 	}
 
-	public addItemsFromPlaylist( playlist: Playlist ): void
+	public async addItemsFromPlaylist( playlist: Playlist ): Promise<number>
 	{
 		for ( const { segmentID, segmentURL } of playlist )
 		{
@@ -158,5 +192,7 @@ export class ChannelStream
 
 			this.idList.push( segmentID )
 		}
+
+		return playlist.length
 	}
 }

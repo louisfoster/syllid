@@ -56,11 +56,11 @@
       ]
     },
     "channelStream.js": {
-      "bytes": 2152,
+      "bytes": 2619,
       "imports": []
     },
     "syllid.js": {
-      "bytes": 3360,
+      "bytes": 3521,
       "imports": [
         {
           "path": "listProcessor.js",
@@ -107,13 +107,13 @@
           "bytesInOutput": 1863
         },
         "channelStream.js": {
-          "bytesInOutput": 1506
+          "bytesInOutput": 1832
         },
         "syllid.js": {
-          "bytesInOutput": 2100
+          "bytesInOutput": 2159
         }
       },
-      "bytes": 217624
+      "bytes": 218009
     }
   }
 }
