@@ -28,13 +28,13 @@ export class Player
 {
 	public channels: number
 
-	private ctx: AudioContext
+	private ctx?: AudioContext
 
 	private worklet?: AudioWorkletNode
 
-	private splitter: ChannelSplitterNode
+	private splitter?: ChannelSplitterNode
 
-	private merger: ChannelMergerNode
+	private merger?: ChannelMergerNode
 
 	private gain: GainNode[]
 
@@ -44,40 +44,11 @@ export class Player
 	{
 		this.bindFns()
 
-		this.ctx = new ( window.AudioContext || window.webkitAudioContext )()
-
-		this.ctx.suspend()
-
-		const { maxChannelCount, channelCount } = this.ctx.destination
-
-		this.channels = Math.max( maxChannelCount, channelCount )
-
-		if ( maxChannelCount > channelCount ) this.ctx.destination.channelCount = this.channels
-
-		this.ctx.destination.channelInterpretation = `discrete`
-
-		this.merger = this.ctx.createChannelMerger( this.channels )
-
-		this.merger.connect( this.ctx.destination )
-
-		this.splitter = this.ctx.createChannelSplitter( this.channels )
+		this.channels = 0
 
 		this.gain = []
 
 		this.channelState = []
-
-		for ( let n = 0; n < this.channels; n += 1 )
-		{
-			this.gain[ n ] = this.ctx.createGain()
-
-			this.gain[ n ].gain.setValueAtTime( 0, 0 )
-
-			this.gain[ n ].connect( this.merger, 0, n )
-
-			this.splitter.connect( this.gain[ n ], n, 0 )
-
-			this.channelState[ n ] = false
-		}
 	}
 
 	private bindFns()
@@ -106,7 +77,7 @@ export class Player
 		{
 			this.channelState[ channel ] = true
 
-			this.gain[ channel ].gain.linearRampToValueAtTime( 1.0, this.ctx.currentTime + 1 )
+			this.gain[ channel ].gain.linearRampToValueAtTime( 1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
 		}
 	}
 
@@ -125,7 +96,7 @@ export class Player
 		
 		this.channelState[ channel ] = false
 
-		this.gain[ channel ].gain.linearRampToValueAtTime( 0, this.ctx.currentTime + 1 )
+		this.gain[ channel ].gain.linearRampToValueAtTime( 0, ( this.ctx?.currentTime ?? 0 ) + 1 )
 
 		setTimeout( () => this.worklet?.port.postMessage( this.stateMessage( channel ) ), 1500 )
 	}
@@ -139,18 +110,56 @@ export class Player
 		}
 	}
 
+	private setupCtx()
+	{
+		this.ctx = new ( window.AudioContext || window.webkitAudioContext )()
+
+		this.ctx.suspend()
+
+		const { maxChannelCount, channelCount } = this.ctx.destination
+
+		this.channels = Math.max( maxChannelCount, channelCount )
+
+		if ( maxChannelCount > channelCount ) this.ctx.destination.channelCount = this.channels
+
+		this.ctx.destination.channelInterpretation = `discrete`
+
+		this.merger = this.ctx.createChannelMerger( this.channels )
+
+		this.merger.connect( this.ctx.destination )
+
+		this.splitter = this.ctx.createChannelSplitter( this.channels )
+
+		for ( let n = 0; n < this.channels; n += 1 )
+		{
+			this.gain[ n ] = this.ctx.createGain()
+
+			this.gain[ n ].gain.setValueAtTime( 0, 0 )
+
+			this.gain[ n ].connect( this.merger, 0, n )
+
+			this.splitter.connect( this.gain[ n ], n, 0 )
+
+			this.channelState[ n ] = false
+		}
+	}
+
 	public stop(): void
 	{
-		this.ctx.suspend()
+		this.ctx?.suspend()
 	}
 
 	public async init(): Promise<void>
 	{
-		await this.ctx.audioWorklet.addModule( this.createWorkerScriptBlob( worker ).toString() )
+		this.setupCtx()
+
+		if ( !this.ctx ) throw Error( `No audio context` )
+
+		await this.ctx?.audioWorklet.addModule( this.createWorkerScriptBlob( worker ).toString() )
 
 		this.worklet = new AudioWorkletNode( this.ctx, `playerWorklet`, { outputChannelCount: [ this.channels ] } )
 
-		this.worklet.connect( this.splitter )
+		if ( this.splitter ) this.worklet.connect( this.splitter )
 
 		this.ctx.resume()
 	}

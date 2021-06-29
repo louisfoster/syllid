@@ -49,8 +49,6 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 
 		this.streams = []
 
-		this.createStreams()
-
 		this.initialised = false
 	}
 
@@ -161,14 +159,20 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 			this.player.feed( index, buffer )
 	}
 
-	public playChannel( index: number ): void
+	public async init(): Promise<void>
 	{
 		if ( !this.initialised )
 		{
 			this.initialised = true
 
 			this.player.init()
+				.then( () => this.createStreams() )
 		}
+	}
+
+	public playChannel( index: number ): void
+	{
+		if ( !this.initialised ) return
 		
 		this.streams[ index ].start()
 	}

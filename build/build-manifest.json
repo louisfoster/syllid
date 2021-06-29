@@ -39,7 +39,7 @@
       "imports": []
     },
     "player.js": {
-      "bytes": 2770,
+      "bytes": 2934,
       "imports": [
         {
           "path": "__snowpack__/env.js",
@@ -60,7 +60,7 @@
       "imports": []
     },
     "syllid.js": {
-      "bytes": 3521,
+      "bytes": 3590,
       "imports": [
         {
           "path": "listProcessor.js",
@@ -104,16 +104,16 @@
           "bytesInOutput": 2254
         },
         "player.js": {
-          "bytesInOutput": 1863
+          "bytesInOutput": 1980
         },
         "channelStream.js": {
           "bytesInOutput": 1923
         },
         "syllid.js": {
-          "bytesInOutput": 2159
+          "bytesInOutput": 2201
         }
       },
-      "bytes": 218100
+      "bytes": 218259
     }
   }
 }
