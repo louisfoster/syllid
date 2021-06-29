@@ -26,6 +26,7 @@ export declare class Syllid implements StreamHandler, ListProcessorHandler {
     getSegmentURLs(stream: ChannelStream): Promise<number>;
     bufferSegmentData(fetchList: string[], index: number): Promise<void>;
     onBuffer(buffer: Float32Array, index: number): void;
+    init(): Promise<void>;
     playChannel(index: number): void;
     stopChannel(index: number): void;
     addURL(url: URL): this;

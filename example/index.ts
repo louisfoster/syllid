@@ -14,6 +14,8 @@ class App implements SyllidContextInterface
 
 		this.btnClick = this.btnClick.bind( this )
 
+		this.start = this.start.bind( this )
+
 		this.el = this.getEl( `#main` )
 
 		this.startBtn = this.getEl( `#startBtn` )
@@ -79,12 +81,16 @@ class App implements SyllidContextInterface
 
 	private start()
 	{
-		this.syllid?.addURL( new URL( `/playlist`, window.origin ) )
+		this.syllid?.init()
+			.then( () =>
+			{
+				this.syllid?.addURL( new URL( `/playlist`, window.origin ) )
 
-		for ( let c = 0; c < ( this.syllid?.getChannels() ?? 0 ); c++ )
-		{
-			this.btn( c )
-		}
+				for ( let c = 0; c < ( this.syllid?.getChannels() ?? 0 ); c++ )
+				{
+					this.btn( c )
+				}
+			} )
 	}
 
 	private load()

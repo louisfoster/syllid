@@ -1,10 +1,10 @@
 import "audioworklet-polyfill";
 export declare class Player {
     channels: number;
-    private ctx;
+    private ctx?;
     private worklet?;
-    private splitter;
-    private merger;
+    private splitter?;
+    private merger?;
     private gain;
     private channelState;
     constructor();
@@ -14,6 +14,7 @@ export declare class Player {
     private bufferMessage;
     stopChannel(channel: number): void;
     private stateMessage;
+    private setupCtx;
     stop(): void;
     init(): Promise<void>;
 }
