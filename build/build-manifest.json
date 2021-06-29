@@ -31,7 +31,7 @@
       ]
     },
     "playerWorklet.js": {
-      "bytes": 1792,
+      "bytes": 2183,
       "imports": []
     },
     "web_modules/audioworklet-polyfill.js": {
@@ -39,7 +39,7 @@
       "imports": []
     },
     "player.js": {
-      "bytes": 1908,
+      "bytes": 2770,
       "imports": [
         {
           "path": "__snowpack__/env.js",
@@ -56,11 +56,11 @@
       ]
     },
     "channelStream.js": {
-      "bytes": 2152,
+      "bytes": 2788,
       "imports": []
     },
     "syllid.js": {
-      "bytes": 3360,
+      "bytes": 3521,
       "imports": [
         {
           "path": "listProcessor.js",
@@ -98,22 +98,22 @@
           "bytesInOutput": 737
         },
         "playerWorklet.js": {
-          "bytesInOutput": 1763
+          "bytesInOutput": 2154
         },
         "web_modules/audioworklet-polyfill.js": {
           "bytesInOutput": 2254
         },
         "player.js": {
-          "bytesInOutput": 1216
+          "bytesInOutput": 1863
         },
         "channelStream.js": {
-          "bytesInOutput": 1506
+          "bytesInOutput": 1923
         },
         "syllid.js": {
-          "bytesInOutput": 2100
+          "bytesInOutput": 2159
         }
       },
-      "bytes": 216586
+      "bytes": 218100
     }
   }
 }

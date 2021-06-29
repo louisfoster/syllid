@@ -32,6 +32,14 @@ export class Player
 
 	private worklet?: AudioWorkletNode
 
+	private splitter: ChannelSplitterNode
+
+	private merger: ChannelMergerNode
+
+	private gain: GainNode[]
+
+	private channelState: boolean[]
+
 	constructor()
 	{
 		this.bindFns()
@@ -47,6 +55,29 @@ export class Player
 		if ( maxChannelCount > channelCount ) this.ctx.destination.channelCount = this.channels
 
 		this.ctx.destination.channelInterpretation = `discrete`
+
+		this.merger = this.ctx.createChannelMerger( this.channels )
+
+		this.merger.connect( this.ctx.destination )
+
+		this.splitter = this.ctx.createChannelSplitter( this.channels )
+
+		this.gain = []
+
+		this.channelState = []
+
+		for ( let n = 0; n < this.channels; n += 1 )
+		{
+			this.gain[ n ] = this.ctx.createGain()
+
+			this.gain[ n ].gain.setValueAtTime( 0, 0 )
+
+			this.gain[ n ].connect( this.merger, 0, n )
+
+			this.splitter.connect( this.gain[ n ], n, 0 )
+
+			this.channelState[ n ] = false
+		}
 	}
 
 	private bindFns()
@@ -70,6 +101,13 @@ export class Player
 	public feed( channel: number, data: Float32Array ): void
 	{
 		this.worklet?.port.postMessage( this.bufferMessage( channel, data ), [ data.buffer ] )
+
+		if ( !this.channelState[ channel ] )
+		{
+			this.channelState[ channel ] = true
+
+			this.gain[ channel ].gain.linearRampToValueAtTime( 1.0, this.ctx.currentTime + 1 )
+		}
 	}
 
 	private bufferMessage( channel: number, data: Float32Array ): BufferMessage
@@ -83,7 +121,13 @@ export class Player
 
 	public stopChannel( channel: number ): void
 	{
-		this.worklet?.port.postMessage( this.stateMessage( channel ) )
+		if ( !this.channelState[ channel ] ) return
+		
+		this.channelState[ channel ] = false
+
+		this.gain[ channel ].gain.linearRampToValueAtTime( 0, this.ctx.currentTime + 1 )
+
+		setTimeout( () => this.worklet?.port.postMessage( this.stateMessage( channel ) ), 1500 )
 	}
 
 	private stateMessage( channel: number ): StateMessage
@@ -106,7 +150,7 @@ export class Player
 
 		this.worklet = new AudioWorkletNode( this.ctx, `playerWorklet`, { outputChannelCount: [ this.channels ] } )
 
-		this.worklet.connect( this.ctx.destination )
+		this.worklet.connect( this.splitter )
 
 		this.ctx.resume()
 	}

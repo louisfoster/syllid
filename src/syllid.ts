@@ -74,7 +74,7 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 		return Math.floor( Math.random() * ( to - from ) + from )
 	}
 
-	private validatePlaylist( items: Playlist ): Playlist 
+	private validatePlaylist( items: Playlist ): Playlist
 	{
 		if ( !Array.isArray( items ) ) 
 		{
@@ -106,17 +106,17 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 		return url.endsWith( `/` ) ? url : `${url}/`
 	}
 
-	public getSegmentURLs( stream: ChannelStream ): void 
+	public async getSegmentURLs( stream: ChannelStream ): Promise<number>
 	{
 		const randomLocation = this.locations[ this.randomInt( 0, this.locations.length ) ]
 
 		const path: string = stream.getPath( randomLocation )
 
-		if ( !path ) return
+		if ( !path ) return 0
 
 		// start=random query required to hint server
 		// to return samples from a random start point
-		fetch( path )
+		return await fetch( path )
 			.then( response => 
 			{
 				if ( response.status !== 200 )
@@ -135,9 +135,19 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 			} )
 			.then( ( items: Playlist ) => 
 				this.validatePlaylist( items )
-					.slice( 0, this.randomInt( 0, items.length ) ) )
-			.then( items => stream.addItemsFromPlaylist( items ) )
-			.catch( ( e: Error ) => this.context.onWarning( e.message ) )
+					// loop is every 3 seconds, so it should be at least 3 samples
+					.slice( 0, this.randomInt( 3, items.length ) ) )
+			.then( ( items ) => 
+			{
+				if ( items.length === 0 ) return this.getSegmentURLs( stream )
+				else return stream.addItemsFromPlaylist( items )	
+			} )
+			.catch( ( e: Error ) => 
+			{
+				this.context.onWarning( e.message )
+
+				return 0
+			} )
 	}
 
 	public async bufferSegmentData( fetchList: string[], index: number ): Promise<void> 

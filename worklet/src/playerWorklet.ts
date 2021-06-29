@@ -54,6 +54,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.handleBuffer = this.handleBuffer.bind( this )
 
 		this.process = this.process.bind( this )
+
+		this.onEndProcess = this.onEndProcess.bind( this )
 	}
 
 	private newChannelItem(): ChannelData
@@ -85,6 +87,15 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.channels[ data.channel ].state = data.state
 	}
 
+	private bufferKey( channel: number )
+	{
+		const number = this.channels[ channel ].totalBuffers
+
+		this.channels[ channel ].totalBuffers += 1
+
+		return number
+	}
+
 	private handleBuffer( data: Message )
 	{
 		// Wrong type
@@ -101,10 +112,23 @@ class PlayerWorklet extends AudioWorkletProcessor
 		{
 			this.channels[ data.channel ].state = true
 		}
-		
-		this.channels[ data.channel ][ this.channels[ data.channel ].totalBuffers ] = data.buffer
 
-		this.channels[ data.channel ].totalBuffers += 1
+		const key = this.bufferKey( data.channel )
+		
+		this.channels[ data.channel ][ key ] = data.buffer
+	}
+
+	// Clean up tasks
+	private onEndProcess()
+	{
+		for ( let i = 0; i < this.channels.length; i += 1 ) 
+		{
+			if ( !this.channels[ i ].state && this.channels[ i ].totalBuffers > 0 )
+			{
+				// Reset channel if stopped
+				this.channels[ i ] = this.newChannelItem()
+			}
+		}
 	}
 
 	/**
@@ -119,33 +143,47 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 		const max = Math.min( this.channels.length, output.length )
 
-		for ( let channelIndex = 0; channelIndex < max; channelIndex += 1 ) 
+		try
 		{
-			const channel = output[ channelIndex ]
-
-			const ref = this.channels[ channelIndex ]
-
-			for ( let dataIndex = 0; dataIndex < channel.length; dataIndex += 1 ) 
+			for ( let channelIndex = 0; channelIndex < max; channelIndex += 1 ) 
 			{
-				if ( !ref.state )
-				{
-					channel[ dataIndex ] = 0
-				}
-				else if ( !ref.totalBuffers || !ref[ ref.currentBuffer ] )
-				{
-					channel[ dataIndex ] = Math.random() * 0.001
-				}
-				else
-				{
-					// If we are < 100 from end of buffer, add beginning of new buffer
-					channel[ dataIndex ] = ref[ ref.currentBuffer ][ ref.bufferCursor ]
+				const channelBuffer = output[ channelIndex ]
 
+				const ref = this.channels[ channelIndex ]
+
+				if ( !ref.state // not playing
+					|| !ref.totalBuffers // no buffers
+					|| !ref[ ref.currentBuffer ] // no current buffer
+				)
+				{
+					channelBuffer.fill( 0 )
+
+					continue
+				}
+
+				for ( let dataIndex = 0; dataIndex < channelBuffer.length; dataIndex += 1 ) 
+				{
+					if ( !ref.state || !ref.totalBuffers || !ref[ ref.currentBuffer ] )
+					{
+						channelBuffer.fill( 0, dataIndex )
+
+						break
+					}
+
+					channelBuffer[ dataIndex ] = ref[ ref.currentBuffer ][ ref.bufferCursor ]
+
+					let faded = false
+
+					// If we are < 2000 from end of buffer, add beginning of new buffer
 					if ( ref.bufferCursor > ref[ ref.currentBuffer ].length - 2000
-							&& ref[ ref.currentBuffer + 1 ] )
+						&& ref[ ref.currentBuffer + 1 ]
+					)
 					{
 						const i = 2000 - ( ref[ ref.currentBuffer ].length - ref.bufferCursor )
 
-						channel[ dataIndex ] += ref[ ref.currentBuffer + 1 ][ i ]
+						channelBuffer[ dataIndex ] += ref[ ref.currentBuffer + 1 ][ i ]
+
+						faded = true
 					}
 
 					ref.bufferCursor += 1
@@ -156,12 +194,18 @@ class PlayerWorklet extends AudioWorkletProcessor
 						// Delete used buffer
 						delete ref[ ref.currentBuffer ]
 
-						ref.bufferCursor = 2000
+						ref.bufferCursor = faded ? 2000 : 0
 
 						ref.currentBuffer += 1
 					}
 				}
 			}
+
+			this.onEndProcess()
+		}
+		catch ( e )
+		{
+			console.warn( `Audio Worklet Errored:`, e )
 		}
 
 		return true
