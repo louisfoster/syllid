@@ -18,6 +18,7 @@ export declare class Syllid implements StreamHandler, ListProcessorHandler {
      * @param context Interface to the context importing this lib
      */
     constructor(context: SyllidContextInterface);
+    private bindFns;
     private createStreams;
     getChannels(): number;
     randomInt(from: number, to: number): number;
