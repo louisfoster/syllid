@@ -22,6 +22,7 @@ export declare class ChannelStream {
     private errors;
     constructor(index: number, handler: StreamHandler, provider: StreamProvider);
     private addQuery;
+    private segmentInterval;
     private getSegments;
     start(): void;
     private processURLs;

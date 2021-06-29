@@ -76,15 +76,28 @@ export class ChannelStream
 		return _url.toString()
 	}
 
+	private segmentInterval( time: number )
+	{
+		this.interval = window.setTimeout( () => this.getSegments(), time )
+	}
+
 	private getSegments()
 	{
 		this.provider.getSegmentURLs( this )
 			.then( count =>
 			{
-				this.errors = 0
+				if ( count > 0 )
+				{
+					this.errors = 0
 
-				this.interval = window.setTimeout( () => 
-					this.getSegments(), Math.max( 0, count * 1000 - 1000 ) )
+					this.segmentInterval( Math.max( 0, count * 1000 - 1000 ) )
+				}
+				else
+				{
+					this.errors += 1
+
+					this.segmentInterval( Math.round( Math.exp( this.errors ) * 50 ) )
+				}
 			} )
 			.catch( e =>
 			{
@@ -92,8 +105,7 @@ export class ChannelStream
 
 				this.handler.onWarning( e )
 
-				this.interval = window.setTimeout( () => 
-					this.getSegments(), Math.round( Math.exp( this.errors ) * 100 ) )
+				this.segmentInterval( Math.round( Math.exp( this.errors ) * 100 ) )
 			} )
 	}
 
