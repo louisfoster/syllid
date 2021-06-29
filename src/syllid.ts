@@ -31,13 +31,7 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 	 */
 	constructor( private context: SyllidContextInterface ) 
 	{
-		this.onBuffer = this.onBuffer.bind( this )
-
-		this.getSegmentURLs = this.getSegmentURLs.bind( this )
-
-		this.bufferSegmentData = this.bufferSegmentData.bind( this )
-
-		this.stopChannel = this.stopChannel.bind( this )
+		this.bindFns()
 		
 		this.locations = []
 
@@ -50,6 +44,25 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 		this.streams = []
 
 		this.initialised = false
+	}
+
+	private bindFns()
+	{
+		this.onBuffer = this.onBuffer.bind( this )
+
+		this.getSegmentURLs = this.getSegmentURLs.bind( this )
+
+		this.bufferSegmentData = this.bufferSegmentData.bind( this )
+
+		this.playChannel = this.playChannel.bind( this )
+
+		this.stopChannel = this.stopChannel.bind( this )
+
+		this.addURL = this.addURL.bind( this )
+
+		this.removeURL = this.removeURL.bind( this )
+
+		this.stop = this.stop.bind( this )
 	}
 
 	private createStreams(): void 
