@@ -178,8 +178,9 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 		{
 			this.initialised = true
 
-			this.player.init()
-				.then( () => this.createStreams() )
+			await this.player.init()
+			
+			this.createStreams()
 		}
 	}
 
