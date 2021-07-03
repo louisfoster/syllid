@@ -78,7 +78,7 @@ export class ChannelStream
 
 	private segmentInterval( time: number )
 	{
-		this.interval = window.setTimeout( () => this.getSegments(), time )
+		this.interval = window.setTimeout( () => this.getSegments(), Math.min( 8000, time ) )
 	}
 
 	private getSegments()

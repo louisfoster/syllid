@@ -56,7 +56,7 @@
       ]
     },
     "channelStream.js": {
-      "bytes": 2788,
+      "bytes": 2803,
       "imports": []
     },
     "syllid.js": {
@@ -107,13 +107,13 @@
           "bytesInOutput": 2060
         },
         "channelStream.js": {
-          "bytesInOutput": 1923
+          "bytesInOutput": 1937
         },
         "syllid.js": {
           "bytesInOutput": 2379
         }
       },
-      "bytes": 218520
+      "bytes": 218534
     }
   }
 }
