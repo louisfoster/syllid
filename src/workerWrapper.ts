@@ -46,7 +46,7 @@ export class WorkerWrapper
 
 		this.worker.postMessage( { 
 			command: `init`,
-			decoderSampleRate: sampleRate,
+			decoderSampleRate: 48000,
 			outputBufferSampleRate: sampleRate
 		} )
 	}

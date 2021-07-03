@@ -66,9 +66,6 @@ class App {
     static init() {
         new App();
     }
-    sampleRate() {
-        return 48000;
-    }
     onWarning(message) {
         console.warn(message);
     }

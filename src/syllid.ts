@@ -4,8 +4,6 @@ import { ChannelStream, StreamHandler } from "./channelStream"
 
 export interface SyllidContextInterface
 {
-	sampleRate: () => number
-
 	onWarning: ( message: string | Error | ErrorEvent ) => void
 
 	onFailure: ( error: string | Error | ErrorEvent ) => void
@@ -21,7 +19,7 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 
 	private player: Player
 
-	private processor: ListProcessor
+	private processor?: ListProcessor
 
 	private initialised: boolean
 
@@ -38,8 +36,6 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 		this.urlLocationMap = {}
 
 		this.player = new Player()
-
-		this.processor = new ListProcessor( this )
 
 		this.streams = []
 
@@ -150,7 +146,7 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 					.slice( 0, this.randomInt( 3, items.length ) ) )
 			.then( ( items ) => 
 			{
-				if ( items.length === 0 ) return this.getSegmentURLs( stream )
+				if ( items.length === 0 ) return 0
 				else return stream.addItemsFromPlaylist( items )	
 			} )
 			.catch( ( e: Error ) => 
@@ -163,7 +159,7 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 
 	public async bufferSegmentData( fetchList: string[], index: number ): Promise<void> 
 	{
-		await this.processor.processURLList( fetchList, index )
+		await this.processor?.processURLList( fetchList, index )
 	}
 
 	public onBuffer( buffer: Float32Array, index: number ): void
@@ -179,6 +175,8 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 			this.initialised = true
 
 			await this.player.init()
+
+			this.processor = new ListProcessor( this, this.player.sampleRate() )
 			
 			this.createStreams()
 		}

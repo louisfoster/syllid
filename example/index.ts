@@ -117,11 +117,6 @@ class App implements SyllidContextInterface
 		new App()
 	}
 
-	public sampleRate(): number
-	{
-		return 48000
-	}
-
 	public onWarning( message: string | Error | ErrorEvent ): void
 	{
 		console.warn( message )

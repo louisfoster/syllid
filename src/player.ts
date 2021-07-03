@@ -161,6 +161,13 @@ export class Player
 
 		if ( this.splitter ) this.worklet.connect( this.splitter )
 
+		console.log( this.ctx.sampleRate )
+
 		this.ctx.resume()
+	}
+
+	public sampleRate(): number
+	{
+		return this.ctx?.sampleRate ?? 48000
 	}
 }
