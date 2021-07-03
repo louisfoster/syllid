@@ -17,5 +17,6 @@ export declare class Player {
     private setupCtx;
     stop(): void;
     init(): Promise<void>;
+    sampleRate(): number;
 }
 //# sourceMappingURL=player.d.ts.map

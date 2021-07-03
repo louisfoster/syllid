@@ -1,7 +1,6 @@
 import { ListProcessorHandler } from "./listProcessor";
 import { ChannelStream, StreamHandler } from "./channelStream";
 export interface SyllidContextInterface {
-    sampleRate: () => number;
     onWarning: (message: string | Error | ErrorEvent) => void;
     onFailure: (error: string | Error | ErrorEvent) => void;
 }
@@ -11,7 +10,7 @@ export declare class Syllid implements StreamHandler, ListProcessorHandler {
     private urlLocationMap;
     private streams;
     private player;
-    private processor;
+    private processor?;
     private initialised;
     /**
      *
