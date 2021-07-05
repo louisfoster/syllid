@@ -24,7 +24,8 @@
 		]
 	},
 	"include": [
-		"index.ts",	
+		"index.ts",
+		"../build"
 	],
 	"exclude": [
 		"node_modules",

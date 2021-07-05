@@ -1,11 +1,12 @@
 {
 	"name": "syllid",
-	"version": "1.2.3",
+	"version": "2.3.0",
 	"description": "multi-channel multi-stream audio decoder and player",
 	"main": "build/syllid.js",
 	"scripts": {
 		"start": "npm run snowpack:dev",
 		"build": "npm run snowpack:build && npm run remove:modules",
+		"build:with-worklet": "cd worklet; npm run build; cd ..; npm run build;",
 		"snowpack:dev": "snowpack dev",
 		"snowpack:build": "snowpack build",
 		"remove:modules": "rm -rf build/modules",

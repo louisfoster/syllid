@@ -5,6 +5,7 @@ class App {
     constructor() {
         this.load = this.load.bind(this);
         this.btnClick = this.btnClick.bind(this);
+        this.start = this.start.bind(this);
         this.el = this.getEl(`#main`);
         this.startBtn = this.getEl(`#startBtn`);
         this.startBtn.addEventListener(`click`, this.load);
@@ -42,10 +43,13 @@ class App {
         this.el.appendChild(b);
     }
     start() {
-        this.syllid?.addURL(new URL(`/playlist`, window.origin));
-        for (let c = 0; c < (this.syllid?.getChannels() ?? 0); c++) {
-            this.btn(c);
-        }
+        this.syllid?.init()
+            .then(() => {
+            this.syllid?.addURL(new URL(`/playlist`, window.origin));
+            for (let c = 0; c < (this.syllid?.getChannels() ?? 0); c++) {
+                this.btn(c);
+            }
+        });
     }
     load() {
         if (!this.syllid) {
@@ -61,9 +65,6 @@ class App {
     }
     static init() {
         new App();
-    }
-    sampleRate() {
-        return 48000;
     }
     onWarning(message) {
         console.warn(message);
