@@ -85,6 +85,13 @@ app.get('/playlist', (req, res) =>
 	else res.json(urls)
 })
 
+app.get('/playlisto', (req, res) =>
+{
+	let path = `/playlist`
+	if (req.query.start === `random`) path += `?start=random`
+	res.redirect(path)
+})
+
 console.log("Listening on PORT", PORT)
 
 app.listen( PORT )

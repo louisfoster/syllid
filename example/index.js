@@ -45,7 +45,7 @@ class App {
     start() {
         this.syllid?.init()
             .then(() => {
-            this.syllid?.addURL(new URL(`/playlist`, window.origin));
+            this.syllid?.addURL(new URL(`/playlisto`, window.origin));
             for (let c = 0; c < (this.syllid?.getChannels() ?? 0); c++) {
                 this.btn(c);
             }
