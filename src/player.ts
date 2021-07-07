@@ -24,6 +24,26 @@ enum MessageType
 	buffer = `buffer`
 }
 
+enum ChannelState
+{
+	muted,
+	active
+}
+
+enum StreamState
+{
+	inactive,
+	buffering,
+	active
+}
+
+interface StreamData
+{
+	stream: Stream
+	channels: ChannelState[]
+	state: StreamState
+}
+
 export class Player
 {
 	public channels: number
@@ -38,7 +58,7 @@ export class Player
 
 	private gain: GainNode[]
 
-	private channelState: boolean[]
+	private streams: StreamData[]
 
 	constructor()
 	{
@@ -48,7 +68,7 @@ export class Player
 
 		this.gain = []
 
-		this.channelState = []
+		this.streams = []
 	}
 
 	private bindFns()
@@ -67,47 +87,6 @@ export class Player
 		const blob = new Blob( [ script ], { type: `text/javascript` } )
 
 		return new URL( URL.createObjectURL( blob ), import.meta.url )
-	}
-
-	public feed( channel: number, data: Float32Array ): void
-	{
-		this.worklet?.port.postMessage( this.bufferMessage( channel, data ), [ data.buffer ] )
-
-		if ( !this.channelState[ channel ] )
-		{
-			this.channelState[ channel ] = true
-
-			this.gain[ channel ].gain.linearRampToValueAtTime( 1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
-		}
-	}
-
-	private bufferMessage( channel: number, data: Float32Array ): BufferMessage
-	{
-		return {
-			buffer: data,
-			channel,
-			type: MessageType.buffer
-		}
-	}
-
-	public stopChannel( channel: number ): void
-	{
-		if ( !this.channelState[ channel ] ) return
-		
-		this.channelState[ channel ] = false
-
-		this.gain[ channel ].gain.linearRampToValueAtTime( 0, ( this.ctx?.currentTime ?? 0 ) + 1 )
-
-		setTimeout( () => this.worklet?.port.postMessage( this.stateMessage( channel ) ), 1500 )
-	}
-
-	private stateMessage( channel: number ): StateMessage
-	{
-		return {
-			channel,
-			state: false,
-			type: MessageType.state
-		}
 	}
 
 	private setupCtx()
@@ -139,14 +118,25 @@ export class Player
 			this.gain[ n ].connect( this.merger, 0, n )
 
 			this.splitter.connect( this.gain[ n ], n, 0 )
-
-			this.channelState[ n ] = false
 		}
 	}
 
-	public stop(): void
+	private bufferMessage( channel: number, data: Float32Array ): BufferMessage
 	{
-		this.ctx?.suspend()
+		return {
+			buffer: data,
+			channel,
+			type: MessageType.buffer
+		}
+	}
+
+	private stateMessage( channel: number ): StateMessage
+	{
+		return {
+			channel,
+			state: false,
+			type: MessageType.state
+		}
 	}
 
 	public async init(): Promise<void>
@@ -161,13 +151,39 @@ export class Player
 
 		if ( this.splitter ) this.worklet.connect( this.splitter )
 
-		console.log( this.ctx.sampleRate )
-
 		this.ctx.resume()
 	}
 
 	public sampleRate(): number
 	{
 		return this.ctx?.sampleRate ?? 48000
+	}
+
+	public stop(): void
+	{
+		this.ctx?.suspend()
+	}
+
+	public feed( channel: number, data: Float32Array ): void
+	{
+		this.worklet?.port.postMessage( this.bufferMessage( channel, data ), [ data.buffer ] )
+
+		if ( !this.channelState[ channel ] )
+		{
+			this.channelState[ channel ] = true
+
+			this.gain[ channel ].gain.linearRampToValueAtTime( 1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+		}
+	}
+
+	public stopChannel( channel: number ): void
+	{
+		if ( !this.channelState[ channel ] ) return
+		
+		this.channelState[ channel ] = false
+
+		this.gain[ channel ].gain.linearRampToValueAtTime( 0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+
+		setTimeout( () => this.worklet?.port.postMessage( this.stateMessage( channel ) ), 1500 )
 	}
 }

@@ -6,6 +6,7 @@
  * restarted
  */
 
+import { circular_buffer as CircularBuffer } from "circular_buffer_js"
 
 
 export interface LiveStreamHandler
@@ -14,21 +15,25 @@ export interface LiveStreamHandler
 
 	onWarning: ( message: string ) => void
 
+	onFailure: ( message: string ) => void
+
 	noData: () => void
 }
 
 export interface LiveStreamProvider
 {
 	validatePlaylistResponse: ( items: Playlist ) => Playlist
+
+	decodeSegment: ( data: Uint8Array ) => Promise<Float32Array>
 }
 
-export class LiveStream
+export class LiveStream implements Stream
 {
 	// Buffered data
-	private segments: Float32Array[]
+	private segments: CircularBuffer<Float32Array>
 
-	// Current index for providing segments
-	private segmentCursor: number
+	// Buffer update semafore
+	private updateLock: boolean
 
 	// Segment URLs
 	public fileList: string[]
@@ -47,7 +52,7 @@ export class LiveStream
 
 	constructor(
 		private endpoint: string,
-		private bufferSize: number = 20,
+		private bufferSize: number = 100,
 		private handler: LiveStreamHandler,
 		private provider: LiveStreamProvider )
 	{
@@ -57,9 +62,9 @@ export class LiveStream
 
 		this.idList = []
 
-		this.segmentCursor = 0
+		this.segments = new CircularBuffer( this.bufferSize )
 
-		this.segments = []
+		this.updateLock = false
 
 		this.refCursor = 0
 
@@ -74,62 +79,6 @@ export class LiveStream
 	private bindFns()
 	{
 		this.checkNewSegments = this.checkNewSegments.bind( this )
-	}
-
-	private endpointWithQuery(): string
-	{
-		const _url = new URL( this.endpoint )
-
-		if( !_url.searchParams.has( `start` ) )
-			_url.searchParams.append( `start`, `live` )
-
-		return _url.toString()
-	}
-
-	private getPath(): string 
-	{
-		return this.idList.length > 0
-			? new URL(
-				`${this.idList[ this.idList.length - 1 ]}`,
-				this.endpoint
-			).toString()
-			: this.endpointWithQuery()
-	}
-
-	private addSlash( url: string ): string 
-	{
-		return url.endsWith( `/` ) ? url : `${url}/`
-	}
-
-	private addItemsFromPlaylist( playlist: Playlist ): void
-	{
-		if ( playlist.length === 0 )
-		{
-			this.noUpdate()
-		}
-		else
-		{
-			this.noUpdateCount = 0
-		}
-
-		for ( const { segmentID, segmentURL } of playlist )
-		{
-			this.fileList.push( segmentURL )
-
-			this.idList.push( segmentID )
-		}
-	}
-
-	private noUpdate()
-	{
-		this.noUpdateCount += 1
-
-		if ( this.noUpdateCount > 5 )
-		{
-			this.handler.noData()
-
-			clearInterval(this.checkInterval)
-		}
 	}
 
 	/**
@@ -167,29 +116,180 @@ export class LiveStream
 			.catch( ( e: Error ) => this.handler.onWarning( e.message ) )
 	}
 
+	private getPath(): string 
+	{
+		return this.idList.length > 0
+			? new URL(
+				`${this.idList[ this.idList.length - 1 ]}`,
+				this.endpoint
+			).toString()
+			: this.endpointWithQuery()
+	}
+
+	private endpointWithQuery(): string
+	{
+		const _url = new URL( this.endpoint )
+
+		if( !_url.searchParams.has( `start` ) )
+			_url.searchParams.append( `start`, `live` )
+
+		return _url.toString()
+	}
+
+	private addSlash( url: string ): string 
+	{
+		return url.endsWith( `/` ) ? url : `${url}/`
+	}
+
+	private addItemsFromPlaylist( playlist: Playlist ): void
+	{
+		if ( playlist.length === 0 )
+		{
+			this.noUpdate()
+		}
+		else
+		{
+			this.noUpdateCount = 0
+		}
+
+		for ( const { segmentID, segmentURL } of playlist )
+		{
+			this.fileList.push( segmentURL )
+
+			this.idList.push( segmentID )
+		}
+	}
+
+	private noUpdate()
+	{
+		this.noUpdateCount += 1
+
+		if ( this.noUpdateCount > 5 )
+		{
+			this.handler.noData()
+
+			clearInterval( this.checkInterval )
+		}
+	}
+
 	/**
 	 * Get files from Ref, add to segments
 	 * array
+	 * Check if locked,
+	 * if not, check if full,
+	 * if not, lock and get availability
+	 * iterate over available count,
+	 * push as many available segment URL downloads
+	 * unlock, then call itself
 	 */
-	private updateBuffer()
+	private async updateBuffer()
 	{
-		// if our buffer has space
-		// and we have fresh segments
-		// get as many URLs as possible
-		// to exhaust fresh segments
-		// and fill space in buffer
+		if ( this.updateLock || this.segments.full() ) return
 
+		this.updateLock = true
 
-		// all numbers greater than fill cursor
-		// and less than used cursor
+		const count = this.segments.available()
 
-		if (this.segments[])
+		for ( let i = 0; i < count; i += 1 )
+		{
+			const url = this.fileList[ this.refCursor ]
+
+			if ( !url ) break
+
+			await this.getBuffer( url )
+
+			this.refCursor += 1
+		}
+
+		this.updateLock = false
+
+		this.updateBuffer()
 	}
 
-	public nextSegments(): void
+	/**
+	 * Reserve worker
+	 * Download data
+	 * send data to worker
+	 * return decoded buffer
+	 * push to segment circular buffer
+	 */
+	private async getBuffer( url: string )
 	{
-		/**
-		 * Send more segments
-		 */
+		try
+		{
+			const response = await fetch( url )
+
+			if ( !response.ok )
+				throw Error(
+					`Invalid Response: ${response.status} ${response.statusText}`
+				)
+
+			if ( !response.body ) throw Error( `ReadableStream not supported.` )
+		
+			const reader = response.body.getReader()
+		
+			const data = await reader.read().then( res => this.evalChunk( reader, res, 0, [] ) )
+			
+			const decoded = await this.provider.decodeSegment( data )
+
+			this.segments.push( decoded )
+		}
+		catch ( e )
+		{
+			this.handler.onFailure( e )
+		}
+	}
+
+	private async evalChunk(
+		reader: Reader,
+		{ done, value }: Result,
+		totalSize: number,
+		chunks: Uint8Array[] ): Promise<Uint8Array> 
+	{
+		if ( done )
+		{
+			const data = new Uint8Array( totalSize )
+
+			let offset = 0
+
+			for ( const chunk of chunks )
+			{
+				data.set( chunk, offset )
+
+				offset += chunk.length
+			}
+
+			return data
+		}
+
+		if ( value )
+		{
+			totalSize += value.length
+
+			chunks.push( value )
+		}
+
+		return reader.read().then( res => this.evalChunk( reader, res, totalSize, chunks ) )
+	}
+
+	public nextSegments(): Float32Array[]
+	{
+		// Maximum segments to load is 10
+		// This is also the limit of segments returned
+		// When requesting latest audio
+		const count = Math.min( 10, this.segments.available() )
+
+		const items: Float32Array[] = []
+
+		for ( let i = 0; i < count; i += 1 )
+		{
+			const segment = this.segments.pop()
+
+			if ( !segment ) continue
+
+			items.push( segment )
+		}
+
+		return items
 	}
 }

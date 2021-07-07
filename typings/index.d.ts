@@ -68,3 +68,39 @@ interface ChannelData
 	totalBuffers: number
 	[buffer: number]: Float32Array
 }
+
+declare module 'circular_buffer_js'
+{
+	export class circular_buffer<T>
+	{
+		private _values;
+		private _cursor;
+		private _length;
+		private _capacity;
+		constructor(uCapacity: number);
+		capacity(): number;
+		length(): number;
+		available(): number;
+		empty(): boolean;
+		full(): boolean;
+		push(v: T): T;
+		pop(): T | undefined;
+		at(i: number): T | undefined;
+	}
+}
+
+type Result = ReadableStreamDefaultReadResult<Uint8Array>
+
+type Reader = ReadableStreamDefaultReader<Uint8Array>
+
+/**
+ * Base class
+ * - is notified when to deliver new segments
+ * - contains a buffer quanitity to know when to fetch more segments
+ * - updates segments when buffer is low
+ * - don't overbuffer
+ */
+interface Stream
+{
+	nextSegments(): Float32Array[]
+}
