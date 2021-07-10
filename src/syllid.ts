@@ -136,7 +136,9 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 				 * to store is the one that fulfilled our request,
 				 * this is why response.url is passed to this method
 				 */
-				stream.setStaleLocation( this.addSlash( response.url ) )
+				const url = new URL( response.url )
+				
+				stream.setStaleLocation( this.addSlash( `${url.origin}${url.pathname}` ) )
 
 				return response.json()
 			} )
