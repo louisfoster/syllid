@@ -21,7 +21,8 @@ import "audioworklet-polyfill"
 enum MessageType
 {
 	state = `state`,
-	buffer = `buffer`
+	buffer = `buffer`,
+	add = `add`
 }
 
 enum ChannelState
@@ -30,18 +31,46 @@ enum ChannelState
 	active
 }
 
-enum StreamState
+enum SourceState
 {
 	inactive,
-	buffering,
+	// buffering,
 	active
 }
 
-interface StreamData
+enum WorkletMessageType
 {
-	stream: Stream
+	feed = `feed`,
+	id = `id`
+}
+
+interface SourceData
+{
+	id: string
 	channels: ChannelState[]
-	state: StreamState
+	state: SourceState
+	connection: GainNode
+	index: number
+}
+
+interface Connector
+{
+	input: ChannelMergerNode
+	output: GainNode
+	count: number
+}
+
+export interface PlayerHandler
+{
+	bufferSource: ( id: string ) => void
+
+	onPlayingBuffers: ( ids: IDMessageItem[] ) => void
+
+	onWarning: ( message: string | Error | ErrorEvent ) => void
+
+	onStartSource: ( id: string ) => void
+
+	onStopSource: ( id: string ) => void
 }
 
 export class Player
@@ -52,23 +81,25 @@ export class Player
 
 	private worklet?: AudioWorkletNode
 
-	private splitter?: ChannelSplitterNode
+	private connectors: Connector[]
 
-	private merger?: ChannelMergerNode
+	private sources: Record<string, SourceData>
 
-	private gain: GainNode[]
+	private sourceIndexMap: string[]
 
-	private streams: StreamData[]
+	private outputMerger?: ChannelMergerNode
 
-	constructor()
+	constructor( private handler: PlayerHandler )
 	{
 		this.bindFns()
 
 		this.channels = 0
 
-		this.gain = []
+		this.connectors = []
 
-		this.streams = []
+		this.sources = {}
+
+		this.sourceIndexMap = []
 	}
 
 	private bindFns()
@@ -78,8 +109,16 @@ export class Player
 		this.feed = this.feed.bind( this )
 		
 		this.stop = this.stop.bind( this )
-		
-		this.stopChannel = this.stopChannel.bind( this )
+
+		this.handleWorkletMessage = this.handleWorkletMessage.bind( this )
+
+		this.startSource = this.startSource.bind( this )
+
+		this.stopSource = this.stopSource.bind( this )
+
+		this.startSourceChannel = this.startSourceChannel.bind( this )
+
+		this.stopSourceChannel = this.stopSourceChannel.bind( this )
 	}
 
 	private createWorkerScriptBlob( script: string ): URL
@@ -103,39 +142,55 @@ export class Player
 
 		this.ctx.destination.channelInterpretation = `discrete`
 
-		this.merger = this.ctx.createChannelMerger( this.channels )
+		this.outputMerger = this.ctx.createChannelMerger( this.channels )
 
-		this.merger.connect( this.ctx.destination )
-
-		this.splitter = this.ctx.createChannelSplitter( this.channels )
+		this.outputMerger.connect( this.ctx.destination )
 
 		for ( let n = 0; n < this.channels; n += 1 )
 		{
-			this.gain[ n ] = this.ctx.createGain()
+			const output = this.ctx.createGain()
 
-			this.gain[ n ].gain.setValueAtTime( 0, 0 )
+			output.gain.setValueAtTime( 0, 0 )
 
-			this.gain[ n ].connect( this.merger, 0, n )
+			output.connect( this.outputMerger, 0, n )
 
-			this.splitter.connect( this.gain[ n ], n, 0 )
+			const input = this.ctx.createChannelMerger( 32 )
+
+			this.connectors[ n ] = {
+				input,
+				output,
+				count: 0
+			}
+	
+			this.connectors[ n ].input.connect( output )
 		}
 	}
 
-	private bufferMessage( channel: number, data: Float32Array ): BufferMessage
+	private bufferMessage( sourceID: string, bufferID: string, data: Float32Array ): BufferMessage
 	{
 		return {
+			id: sourceID,
+			bufferID,
 			buffer: data,
-			channel,
 			type: MessageType.buffer
 		}
 	}
 
-	private stateMessage( channel: number ): StateMessage
+	private stateMessage( id: string, state: boolean ): StateMessage
 	{
 		return {
-			channel,
-			state: false,
+			id,
+			state,
 			type: MessageType.state
+		}
+	}
+
+	private addMessage( id: string, index: number ): AddMessage
+	{
+		return {
+			id,
+			index,
+			type: MessageType.add
 		}
 	}
 
@@ -147,11 +202,221 @@ export class Player
 
 		await this.ctx?.audioWorklet.addModule( this.createWorkerScriptBlob( worker ).toString() )
 
-		this.worklet = new AudioWorkletNode( this.ctx, `playerWorklet`, { outputChannelCount: [ this.channels ] } )
+		this.worklet = new AudioWorkletNode( this.ctx, `playerWorklet`, { numberOfInputs: 0, numberOfOutputs: 32 } )
 
-		if ( this.splitter ) this.worklet.connect( this.splitter )
+		this.worklet.port.onmessage = event => this.handleWorkletMessage( event )
 
 		this.ctx.resume()
+	}
+
+	private handleWorkletMessage( event: MessageEvent<WorkletMessage> )
+	{
+		// console.log( `got worklet message`, event )
+		
+		if ( event.data.type === WorkletMessageType.feed )
+		{
+			// Get more data for a source
+			for ( const id of event.data.streams )
+			{
+				if ( this.sources[ id ].state !== SourceState.active ) continue
+
+				this.handler.bufferSource( id )
+			}
+		}
+		else if ( event.data.type === WorkletMessageType.id )
+		{
+			// IDs of segments currently playing
+			this.handler.onPlayingBuffers( event.data.idList )
+		}
+		else
+		{
+			throw new Error( `Received unknown message type` )
+		}
+	}
+
+	private addSource( id: string )
+	{
+		if ( !this.ctx )
+		{
+			this.handler.onWarning( `No audio context available.` )
+
+			return
+		}
+
+		if ( this.sources[ id ] ) return 
+
+		const index = this.getAvailableIndex( id )
+
+		if ( index === undefined )
+		{
+			// No available connections
+			this.handler.onWarning( `Can't start source, too many sources.` )
+
+			return
+		}
+
+		const connection = this.ctx.createGain()
+
+		connection.gain.setValueAtTime( 0, 0 )
+
+		this.sources[ id ] = {
+			channels: Array( this.channels ).fill( ChannelState.muted ),
+			connection,
+			index,
+			state: SourceState.inactive,
+			id
+		}
+
+		this.worklet?.port.postMessage( this.addMessage( id, index ) )
+	}
+
+	public feed( sourceID: string, bufferID: string, data: Float32Array ): void
+	{
+		this.worklet?.port.postMessage(
+			this.bufferMessage( sourceID, bufferID, data ),
+			[ data.buffer ] )
+	}
+
+	public startSource( id: string ): void
+	{
+		if ( !this.ctx )
+		{
+			this.handler.onWarning( `No audio context available.` )
+
+			return
+		}
+
+		// check if source previously added
+		// create if not, send add message
+		this.addSource( id )
+
+		// send active state message
+		this.sources[ id ].state = SourceState.active
+
+		this.worklet?.connect( this.sources[ id ].connection, this.sources[ id ].index, 0 )
+
+		this.worklet?.port.postMessage( this.stateMessage( id, true ) )
+
+		// fade in source gain
+		this.sources[ id ].connection.gain.linearRampToValueAtTime(
+			1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+
+		this.handler.onStartSource( id )
+	}
+
+	private getAvailableIndex( id: string ): number | undefined
+	{
+		const inactive: number[] = []
+
+		for ( let i = 0; i < 32; i += 1 )
+		{
+			if ( !this.sourceIndexMap[ i ] )
+			{
+				this.sourceIndexMap[ i ] = id
+				
+				return i
+			}
+			else if ( this.sources[ this.sourceIndexMap[ i ] ].state === SourceState.inactive )
+			{
+				inactive.push( i )
+			}
+		}
+
+		if ( inactive.length > 0 )
+		{
+			const i = inactive[ inactive.length - 1 ]
+
+			this.sourceIndexMap[ i ] = id
+
+			return i
+		}
+
+		return
+	}
+
+	public stopSource( sourceID: string ): void
+	{
+		if ( !this.sources[ sourceID ] ) return
+
+		// stop all active channels for source
+		for ( let i = 0; i < this.channels; i += 1 )
+		{
+			if ( this.sources[ sourceID ].channels[ i ] !== ChannelState.muted )
+			{
+				this.stopSourceChannel( sourceID, i )
+			}
+		}
+
+		// fade out gain
+		this.sources[ sourceID ].connection.gain.linearRampToValueAtTime(
+			0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+
+		this.handler.onStopSource( sourceID )
+
+		// send inactive state message
+		setTimeout( () => 
+		{
+			this.worklet?.port.postMessage( this.stateMessage( sourceID, false ) )
+
+			this.worklet?.disconnect( this.sources[ sourceID ].connection, this.sources[ sourceID ].index, 0 )
+		}, 1000 )
+	}
+
+	public startSourceChannel( sourceID: string, channel: number ): void
+	{
+		// check if source previously added
+		// create if not, send add message
+		this.addSource( sourceID )
+
+		// connect source gain node to merger channel node
+		if ( this.sources[ sourceID ]?.channels[ channel ] !== ChannelState.muted ) return
+
+		this.sources[ sourceID ].channels[ channel ] = ChannelState.active
+
+		this.sources[ sourceID ].connection.connect(
+			this.connectors[ channel ].input, 0, this.sources[ sourceID ].index )
+
+		this.connectors[ channel ].count += 1
+
+		// if only source connected, fade in merger gain
+		if ( this.connectors[ channel ].count === 1 )
+		{
+			this.connectors[ channel ].output.gain.linearRampToValueAtTime(
+				1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+		}
+	}
+
+	public stopSourceChannel( sourceID: string, channel: number ): void
+	{
+		if ( !this.sources[ sourceID ] ) return
+
+		// if final source connected to channel
+		// fade out channel merger
+		this.fadeOutChannel( channel )
+			.then( () =>
+			{
+				// disconnect from merger
+				this.sources[ sourceID ].connection.disconnect(
+					this.connectors[ channel ].input, 0, this.sources[ sourceID ].index )
+			} )
+	}
+
+	private fadeOutChannel( channel: number ): Promise<boolean>
+	{
+		return new Promise( resolve =>
+		{
+			if ( this.connectors[ channel ].count === 1 )
+			{
+				this.connectors[ channel ].output.gain.linearRampToValueAtTime(
+					0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+
+				setTimeout( () => resolve( true ) )
+			}
+			else
+			{
+				resolve( false )
+			}
+		} )
 	}
 
 	public sampleRate(): number
@@ -162,28 +427,5 @@ export class Player
 	public stop(): void
 	{
 		this.ctx?.suspend()
-	}
-
-	public feed( channel: number, data: Float32Array ): void
-	{
-		this.worklet?.port.postMessage( this.bufferMessage( channel, data ), [ data.buffer ] )
-
-		if ( !this.channelState[ channel ] )
-		{
-			this.channelState[ channel ] = true
-
-			this.gain[ channel ].gain.linearRampToValueAtTime( 1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
-		}
-	}
-
-	public stopChannel( channel: number ): void
-	{
-		if ( !this.channelState[ channel ] ) return
-		
-		this.channelState[ channel ] = false
-
-		this.gain[ channel ].gain.linearRampToValueAtTime( 0, ( this.ctx?.currentTime ?? 0 ) + 1 )
-
-		setTimeout( () => this.worklet?.port.postMessage( this.stateMessage( channel ) ), 1500 )
 	}
 }

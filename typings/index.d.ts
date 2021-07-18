@@ -18,7 +18,6 @@ interface PlaylistItem
     
 type Playlist = PlaylistItem[]
 
-
 interface AudioWorkletProcessor
 {
 	readonly port: MessagePort;
@@ -48,46 +47,48 @@ interface StateMessage
 {
 	type: `state`
 	state: boolean
-	channel: number
+	id: string
 }
 
 interface BufferMessage
 {
 	type: `buffer`
 	buffer: Float32Array
-	channel: number
+	bufferID: string
+	id: string
 }
 
-type Message = StateMessage | BufferMessage
-
-interface ChannelData
+interface AddMessage
 {
-	state: boolean
-	currentBuffer: number
-	bufferCursor: number
-	totalBuffers: number
-	[buffer: number]: Float32Array
+	type: `add`
+	id: string
+	index: number
 }
 
-declare module 'circular_buffer_js'
+type Message =
+	| StateMessage
+	| BufferMessage
+	| AddMessage
+
+interface FeedMessage
 {
-	export class circular_buffer<T>
-	{
-		private _values;
-		private _cursor;
-		private _length;
-		private _capacity;
-		constructor(uCapacity: number);
-		capacity(): number;
-		length(): number;
-		available(): number;
-		empty(): boolean;
-		full(): boolean;
-		push(v: T): T;
-		pop(): T | undefined;
-		at(i: number): T | undefined;
-	}
+	type: `feed`
+	streams: string[]
 }
+
+interface IDMessageItem
+{
+	sourceID: string
+	bufferID: string
+}
+
+interface IDMessage
+{
+	type: `id`
+	idList: IDMessageItem[]
+}
+
+type WorkletMessage = FeedMessage | IDMessage
 
 type Result = ReadableStreamDefaultReadResult<Uint8Array>
 
@@ -100,7 +101,15 @@ type Reader = ReadableStreamDefaultReader<Uint8Array>
  * - updates segments when buffer is low
  * - don't overbuffer
  */
+interface Segment
+{
+	buffer: Float32Array
+	id: string
+}
+
 interface Stream
 {
-	nextSegments(): Float32Array[]
+	nextSegments(): void
+	start(): void
+	stop(): void
 }

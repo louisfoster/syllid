@@ -4,35 +4,35 @@ const PORT = 5558
 
 // counting
 const ids = [
-	`qDBY6h3qL3jAJ0jqbMmn`,
-	`Mh-kQRQDrSArii_AjCsg`,
-	`qOudnMs256rJxxF4_8Qi`,
-	`ET1obHtgA77nunIL_rbF`,
-	`qYUqeE7Y5okdqXpuwwYu`,
-	`UPiEZZD2_A5HvkDh5W4T`,
-	`DaQGJosqPceQK__nYuFD`,
-	`EVRmlPeDs1KNLZvtlb8o`,
-	`4v6MZCHaADh2haH4eT_N`,
-	`6W89BI-xzLbsHp39G9cD`,
-	`6XXb5xoXjv7OFexutxh3`,
-	`7tfDcFOxnUoZCBKHfoNZ`,
-	`iHBaLuYSd3-K33_jEwMo`,
-	`PD8NQgXY_dbIVmub5Ig4`,
-	`g0bwmOrTO-2bXSJ8J-YD`,
-	`hEBiNfOFvqPjm1I9a8O8`,
+	`0000001`,
+	`0000002`,
+	`0000003`,
+	`0000004`,
+	`0000005`,
+	`0000006`,
+	`0000007`,
+	`0000008`,
+	`0000009`,
+	`0000010`,
+	`0000011`,
+	`0000012`,
+	`0000013`,
+	`0000014`,
+	`0000015`,
+	`0000016`,
 ]
 
 const mapped = ids.reduce((obj, curr, i) => ({...obj, [curr]: i}), {})
 
 // humming
 const ids2 = [
-	`audio-1623413917382`,
-	`audio-1623413918342`,
-	`audio-1623413919525`,
-	`audio-1623413920691`,
-	`audio-1623413921353`,
-	`audio-1623413922516`,
-	`audio-1623413923679`,
+	`0000001`,
+	`0000002`,
+	`0000003`,
+	`0000004`,
+	`0000005`,
+	`0000006`,
+	`0000007`,
 ]
 
 const mapped2 = ids2.reduce((obj, curr, i) => ({...obj, [curr]: i}), {})
@@ -50,7 +50,7 @@ const data = [
 	}
 ]
 
-const selected = 1
+const selected = 0
 
 const streamPublicID = `12345`
 
@@ -61,7 +61,14 @@ const urls = data[selected].ids.map(segmentID =>
 		segmentURL: `http://localhost:${PORT}/audio/${segmentID}.opus`
 	}))
 
-const fromID = id => [...urls.slice(data[selected].mapped[id]), ...urls.slice(0, data[selected].mapped[id])]
+const fromID = id =>
+{
+	const index = data[selected].mapped[id]
+
+	return (index === data[selected].ids.length - 1) 
+		? urls.slice(0, 5)
+		: urls.slice(index + 1, index + 6)
+}
 
 const app = express()
 
@@ -82,9 +89,12 @@ app.get('/playlist', (req, res) =>
 {
 	if (req.query.start === `random`)
 		res.json(fromID(data[selected].ids[Math.floor(Math.random() * data[selected].ids.length)]))
+	if (req.query.start === `latest`)
+		res.json(urls.slice(urls.length - 5))
 	else res.json(urls)
 })
 
+// test for group redirects
 app.get('/playlisto', (req, res) =>
 {
 	let path = `/playlist`

@@ -1,6 +1,6 @@
 import worker from "worker!/opus-recorder/dist/decoder/decoderWorker.min.js"
 
-export interface WorkerWrapperHandler
+export interface WorkerPoolHandler
 {
 	onFailure: ( error: string | Error | ErrorEvent ) => void
 }
@@ -24,7 +24,7 @@ interface WorkerData
 	onCompleted: ( buffer: Float32Array ) => void 
 }
 
-export class WorkerWrapper
+export class WorkerPool
 {
 	private workers: WorkerData[]
 
@@ -34,7 +34,7 @@ export class WorkerWrapper
 
 	constructor(
 		private workerCount: number,
-		private handler: WorkerWrapperHandler,
+		private handler: WorkerPoolHandler,
 		private sampleRate: number )
 	{
 		this.onMessage = this.onMessage.bind( this )

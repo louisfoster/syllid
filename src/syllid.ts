@@ -1,27 +1,37 @@
-import { ListProcessor, ListProcessorHandler } from "./listProcessor"
-import { Player } from "./player"
-import { ChannelStream, StreamHandler } from "./channelStream"
+import { LiveStream, LiveStreamHandler, LiveStreamProvider } from "./liveStream"
+import { Player, PlayerHandler } from "./player"
+import { WorkerPool } from "./workerPool"
 
 export interface SyllidContextInterface
 {
 	onWarning: ( message: string | Error | ErrorEvent ) => void
 
 	onFailure: ( error: string | Error | ErrorEvent ) => void
+
+	onPlayingSegments: ( idList: IDMessageItem[] ) => void
+
+	onPlaying: ( id: string ) => void
+
+	onStopped: ( id: string ) => void
+
+	onNoData: ( id: string ) => void
 }
 
-export class Syllid implements StreamHandler, ListProcessorHandler
+export class Syllid
+implements
+	PlayerHandler,
+	LiveStreamHandler,
+	LiveStreamProvider
 {
-	private locations: string[]
+	public validatePlaylistResponse: ( items: Playlist ) => Playlist
 
-	private urlLocationMap: Record<string, number>
-
-	private streams: ChannelStream[]
+	private streams: Record<string, Stream>
 
 	private player: Player
 
-	private processor?: ListProcessor
-
 	private initialised: boolean
+
+	private workerPool?: WorkerPool
 
 	/**
 	 * 
@@ -30,43 +40,19 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 	constructor( private context: SyllidContextInterface ) 
 	{
 		this.bindFns()
-		
-		this.locations = []
 
-		this.urlLocationMap = {}
+		this.validatePlaylistResponse = this.validatePlaylist
 
-		this.player = new Player()
+		this.player = new Player( this )
 
-		this.streams = []
+		this.streams = {}
 
 		this.initialised = false
 	}
 
 	private bindFns()
 	{
-		this.onBuffer = this.onBuffer.bind( this )
-
-		this.getSegmentURLs = this.getSegmentURLs.bind( this )
-
-		this.bufferSegmentData = this.bufferSegmentData.bind( this )
-
-		this.playChannel = this.playChannel.bind( this )
-
-		this.stopChannel = this.stopChannel.bind( this )
-
-		this.addURL = this.addURL.bind( this )
-
-		this.removeURL = this.removeURL.bind( this )
-
 		this.stop = this.stop.bind( this )
-	}
-
-	private createStreams(): void 
-	{
-		for ( let i = 0; i < this.getChannels(); i++ ) 
-		{
-			this.streams[ i ] = new ChannelStream( i, this, this )
-		}
 	}
 
 	public getChannels(): number
@@ -108,66 +94,51 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 		return items
 	}
 
-	private addSlash( url: string ): string 
+	public bufferSource( id: string ): void
 	{
-		return url.endsWith( `/` ) ? url : `${url}/`
+		// nextSegments request to stream
+		this.streams[ id ].nextSegments()
 	}
 
-	public async getSegmentURLs( stream: ChannelStream ): Promise<number>
+	public onPlayingBuffers( idList: IDMessageItem[] ): void
 	{
-		const randomLocation = this.locations[ this.randomInt( 0, this.locations.length ) ]
-
-		const path: string = stream.getPath( randomLocation )
-
-		if ( !path ) return 0
-
-		// start=random query required to hint server
-		// to return samples from a random start point
-		return await fetch( path )
-			.then( response => 
-			{
-				if ( response.status !== 200 )
-				{
-					throw Error( `Invalid response from endpoint.` )
-				}
-
-				/**
-				 * Because of redirects, the actual url we want
-				 * to store is the one that fulfilled our request,
-				 * this is why response.url is passed to this method
-				 */
-				const url = new URL( response.url )
-				
-				stream.setStaleLocation( this.addSlash( `${url.origin}${url.pathname}` ) )
-
-				return response.json()
-			} )
-			.then( ( items: Playlist ) => 
-				this.validatePlaylist( items )
-					// loop is every 3 seconds, so it should be at least 3 samples
-					.slice( 0, this.randomInt( 3, items.length ) ) )
-			.then( ( items ) => 
-			{
-				if ( items.length === 0 ) return 0
-				else return stream.addItemsFromPlaylist( items )	
-			} )
-			.catch( ( e: Error ) => 
-			{
-				this.context.onWarning( e.message )
-
-				return 0
-			} )
+		// emit handler that segments are now playing
+		this.context.onPlayingSegments( idList )
 	}
 
-	public async bufferSegmentData( fetchList: string[], index: number ): Promise<void> 
+	public onStartSource( id: string ): void
 	{
-		await this.processor?.processURLList( fetchList, index )
+		// emit handler that stream is now playing
+		this.context.onPlaying( id )
 	}
 
-	public onBuffer( buffer: Float32Array, index: number ): void
+	public onStopSource( id: string ): void
 	{
-		if ( this.streams[ index ].running )
-			this.player.feed( index, buffer )
+		// emit handler that stream is stopped playing
+		this.context.onStopped( id )
+	}
+
+	public async decodeSegment( data: Uint8Array ): Promise<Float32Array>
+	{
+		const workerID = await this.getWorkerID()
+
+		return new Promise( resolve =>
+		{
+			this.workerPool?.decode( workerID, data, resolve )
+		} )
+	}
+
+	private getWorkerID( res?: ( id: string ) => void )
+	{
+		return new Promise<string>( resolve =>
+		{
+			const id = this.workerPool?.getWorker()
+
+			const r = res ?? resolve
+
+			if ( !id ) setTimeout( () => this.getWorkerID( r ), 10 )
+			else r( id )
+		} )
 	}
 
 	public async init(): Promise<void>
@@ -178,68 +149,47 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 
 			await this.player.init()
 
-			this.processor = new ListProcessor( this, this.player.sampleRate() )
-			
-			this.createStreams()
+			this.workerPool = new WorkerPool( 4, this, this.player.sampleRate() )
 		}
 	}
 
-	public playChannel( index: number ): void
+	public startStream( id: string ): void
 	{
-		if ( !this.initialised ) return
+		this.init()
+
+		this.streams[ id ]?.start()
+
+		this.player.startSource( id )
+	}
+	
+	public stopStream( id: string ): void
+	{
+		this.streams[ id ]?.stop()
+
+		this.player.stopSource( id )
+	}
+
+	public startStreamChannel( streamID: string, channelIndex: number ): void
+	{
+		if ( !this.streams[ streamID ] ) return
+
+		this.player.startSourceChannel( streamID, channelIndex )
+	}
+
+	public stopStreamChannel( streamID: string, channelIndex: number ): void
+	{
+		if ( !this.streams[ streamID ] ) return
 		
-		this.streams[ index ].start()
-	}
-
-	public stopChannel( index: number ): void
-	{
-		this.player.stopChannel( index )
-
-		this.streams[ index ].stop()
-	}
-
-	public addURL( url: URL ): this
-	{
-		try
-		{
-			const index = this.locations.length
-
-			const _url = url.toString()
-
-			this.urlLocationMap[ _url ] = index
-
-			this.locations.push( this.addSlash( _url ) )
-
-			return this
-		}
-		catch
-		{
-			throw Error( `${url} is not a valid URL.` )
-		}
-	}
-
-	public removeURL( url: URL ): this
-	{
-		const _url = url.toString()
-
-		const index = this.urlLocationMap[ _url ]
-
-		if ( index === undefined ) return this
-
-		this.locations.splice( index, 1 )
-
-		delete this.urlLocationMap[ _url ]
-
-		return this
+		this.player.stopSourceChannel( streamID, channelIndex )
 	}
 
 	public stop(): this
 	{
 		this.player.stop()
 
-		for ( const stream of this.streams ) 
+		for ( const stream in this.streams ) 
 		{
-			stream.stop()
+			this.streams[ stream ].stop()
 		}
 
 		return this
@@ -253,5 +203,28 @@ export class Syllid implements StreamHandler, ListProcessorHandler
 	public onFailure( error: string | Error | ErrorEvent ): void 
 	{
 		this.context.onFailure( error )
+	}
+
+	public addLiveStream( id: string, endpoint: string ): void
+	{
+		if ( this.streams[ id ] ) return
+
+		this.init()
+
+		this.streams[ id ] = new LiveStream( id, endpoint, 100, this, this )
+	}
+
+	public handleSegment( streamID: string, data: Float32Array, segmentID: string ): void
+	{
+		this.player.feed( streamID, segmentID, data )
+	}
+
+	public noData( id: string ): void
+	{
+		// emit no data to context
+		// possibly stop player/ output
+		this.player.stopSource( id )
+
+		this.context.onNoData( id )
 	}
 }

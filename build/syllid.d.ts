@@ -1,38 +1,45 @@
-import { ListProcessorHandler } from "./listProcessor";
-import { ChannelStream, StreamHandler } from "./channelStream";
+import { LiveStreamHandler, LiveStreamProvider } from "./liveStream";
+import { PlayerHandler } from "./player";
 export interface SyllidContextInterface {
     onWarning: (message: string | Error | ErrorEvent) => void;
     onFailure: (error: string | Error | ErrorEvent) => void;
+    onPlayingSegments: (idList: IDMessageItem[]) => void;
+    onPlaying: (id: string) => void;
+    onStopped: (id: string) => void;
+    onNoData: (id: string) => void;
 }
-export declare class Syllid implements StreamHandler, ListProcessorHandler {
+export declare class Syllid implements PlayerHandler, LiveStreamHandler, LiveStreamProvider {
     private context;
-    private locations;
-    private urlLocationMap;
+    validatePlaylistResponse: (items: Playlist) => Playlist;
     private streams;
     private player;
-    private processor?;
     private initialised;
+    private workerPool?;
     /**
      *
      * @param context Interface to the context importing this lib
      */
     constructor(context: SyllidContextInterface);
     private bindFns;
-    private createStreams;
     getChannels(): number;
     randomInt(from: number, to: number): number;
     private validatePlaylist;
-    private addSlash;
-    getSegmentURLs(stream: ChannelStream): Promise<number>;
-    bufferSegmentData(fetchList: string[], index: number): Promise<void>;
-    onBuffer(buffer: Float32Array, index: number): void;
+    bufferSource(id: string): void;
+    onPlayingBuffers(idList: IDMessageItem[]): void;
+    onStartSource(id: string): void;
+    onStopSource(id: string): void;
+    decodeSegment(data: Uint8Array): Promise<Float32Array>;
+    private getWorkerID;
     init(): Promise<void>;
-    playChannel(index: number): void;
-    stopChannel(index: number): void;
-    addURL(url: URL): this;
-    removeURL(url: URL): this;
+    startStream(id: string): void;
+    stopStream(id: string): void;
+    startStreamChannel(streamID: string, channelIndex: number): void;
+    stopStreamChannel(streamID: string, channelIndex: number): void;
     stop(): this;
     onWarning(message: string | Error | ErrorEvent): void;
     onFailure(error: string | Error | ErrorEvent): void;
+    addLiveStream(id: string, endpoint: string): void;
+    handleSegment(streamID: string, data: Float32Array, segmentID: string): void;
+    noData(id: string): void;
 }
 //# sourceMappingURL=syllid.d.ts.map

@@ -8,16 +8,21 @@
 
 import { circular_buffer as CircularBuffer } from "circular_buffer_js"
 
+enum State
+{
+	stopped,
+	running
+}
 
 export interface LiveStreamHandler
 {
-	handleSegment: ( segment: Float32Array, id: string ) => void
+	handleSegment: ( streamID: string, segment: Float32Array, id: string ) => void
 
 	onWarning: ( message: string ) => void
 
 	onFailure: ( message: string ) => void
 
-	noData: () => void
+	noData: ( id: string ) => void
 }
 
 export interface LiveStreamProvider
@@ -30,10 +35,13 @@ export interface LiveStreamProvider
 export class LiveStream implements Stream
 {
 	// Buffered data
-	private segments: CircularBuffer<Float32Array>
+	private segments: CircularBuffer<Segment>
 
-	// Buffer update semafore
+	// Buffer update semaphore
 	private updateLock: boolean
+
+	// Feed segments semaphore
+	private nextLock: boolean
 
 	// Segment URLs
 	public fileList: string[]
@@ -50,7 +58,10 @@ export class LiveStream implements Stream
 	// Times checked for URLs without update
 	private noUpdateCount: number
 
+	private state: State
+
 	constructor(
+		private id: string,
 		private endpoint: string,
 		private bufferSize: number = 100,
 		private handler: LiveStreamHandler,
@@ -66,19 +77,32 @@ export class LiveStream implements Stream
 
 		this.updateLock = false
 
+		this.nextLock = false
+
 		this.refCursor = 0
 
 		this.noUpdateCount = 0
 
-		// Get more segment URLs
-		this.checkNewSegments()
+		this.checkInterval = 0
 
-		this.checkInterval = window.setInterval( () => this.checkNewSegments(), 3000 )
+		this.state = State.stopped
+
+		this.endpoint = this.addSlash( this.endpoint )
+
+		this.start()
 	}
 
 	private bindFns()
 	{
 		this.checkNewSegments = this.checkNewSegments.bind( this )
+	}
+
+	private startCheckLoop()
+	{
+		// Get more segment URLs
+		this.checkNewSegments()
+
+		this.checkInterval = window.setInterval( () => this.checkNewSegments(), 3000 )
 	}
 
 	/**
@@ -106,7 +130,7 @@ export class LiveStream implements Stream
 				 * to store is the one that fulfilled our request,
 				 * this is why response.url is passed to this method
 				 */
-				this.endpoint = this.addSlash( response.url )
+				// this.endpoint = this.addSlash( response.url )
 
 				return response.json()
 			} )
@@ -131,7 +155,7 @@ export class LiveStream implements Stream
 		const _url = new URL( this.endpoint )
 
 		if( !_url.searchParams.has( `start` ) )
-			_url.searchParams.append( `start`, `live` )
+			_url.searchParams.append( `start`, `latest` )
 
 		return _url.toString()
 	}
@@ -166,9 +190,9 @@ export class LiveStream implements Stream
 
 		if ( this.noUpdateCount > 5 )
 		{
-			this.handler.noData()
+			this.handler.noData( this.id )
 
-			clearInterval( this.checkInterval )
+			this.stop()
 		}
 	}
 
@@ -190,11 +214,18 @@ export class LiveStream implements Stream
 
 		const count = this.segments.available()
 
+		let noURL = false
+
 		for ( let i = 0; i < count; i += 1 )
 		{
 			const url = this.fileList[ this.refCursor ]
 
-			if ( !url ) break
+			if ( !url )
+			{
+				noURL = true
+
+				break
+			}
 
 			await this.getBuffer( url )
 
@@ -203,7 +234,7 @@ export class LiveStream implements Stream
 
 		this.updateLock = false
 
-		this.updateBuffer()
+		if ( count !== 0 && !noURL ) this.updateBuffer()
 	}
 
 	/**
@@ -232,7 +263,7 @@ export class LiveStream implements Stream
 			
 			const decoded = await this.provider.decodeSegment( data )
 
-			this.segments.push( decoded )
+			this.segments.push( { buffer: decoded, id: url } )
 		}
 		catch ( e )
 		{
@@ -272,14 +303,16 @@ export class LiveStream implements Stream
 		return reader.read().then( res => this.evalChunk( reader, res, totalSize, chunks ) )
 	}
 
-	public nextSegments(): Float32Array[]
+	public nextSegments(): void
 	{
+		if ( this.nextLock ) return
+
+		this.nextLock = true
+
 		// Maximum segments to load is 10
 		// This is also the limit of segments returned
 		// When requesting latest audio
-		const count = Math.min( 10, this.segments.available() )
-
-		const items: Float32Array[] = []
+		const count = Math.min( 10, this.segments.length() )
 
 		for ( let i = 0; i < count; i += 1 )
 		{
@@ -287,9 +320,29 @@ export class LiveStream implements Stream
 
 			if ( !segment ) continue
 
-			items.push( segment )
+			this.handler.handleSegment( this.id, segment.buffer, segment.id )
 		}
 
-		return items
+		this.nextLock = false
+		
+		if ( count !== 0 ) this.updateBuffer()
+	}
+
+	public start(): void
+	{
+		if ( this.state === State.running ) return
+
+		this.state = State.running
+
+		this.startCheckLoop()
+	}
+
+	public stop(): void
+	{
+		if ( this.state === State.stopped ) return
+
+		this.state = State.stopped
+
+		clearInterval( this.checkInterval )
 	}
 }

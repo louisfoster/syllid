@@ -28,23 +28,62 @@ interface StateMessage
 {
 	type: `state`
 	state: boolean
-	channel: number
+	id: string
 }
 
 interface BufferMessage
 {
 	type: `buffer`
 	buffer: Float32Array
-	channel: number
+	bufferID: string
+	id: string
 }
 
-type Message = StateMessage | BufferMessage
-
-interface ChannelData
+interface AddMessage
 {
+	type: `add`
+	id: string
+	index: number
+}
+
+type Message =
+	| StateMessage
+	| BufferMessage
+	| AddMessage
+
+interface FeedMessage
+{
+	type: `feed`
+	streams: string[]
+}
+
+interface IDMessageItem
+{
+	sourceID: string
+	bufferID: string
+}
+
+interface IDMessage
+{
+	type: `id`
+	idList: IDMessageItem[]
+}
+
+type WorkletMessage = FeedMessage | IDMessage
+
+interface BufferData
+{
+	buffer: Float32Array
+	id: string
+}
+
+interface SourceData
+{
+	id: string
 	state: boolean
 	currentBuffer: number
 	bufferCursor: number
 	totalBuffers: number
-	[buffer: number]: Float32Array
+	bufferState: `new` | `stale`
+	[buffer: number]: BufferData
 }
