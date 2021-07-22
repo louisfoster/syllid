@@ -42,6 +42,15 @@
         }
       ]
     },
+    "randomStream.js": {
+      "bytes": 5331,
+      "imports": [
+        {
+          "path": "web_modules/circular_buffer_js.js",
+          "kind": "import-statement"
+        }
+      ]
+    },
     "modules/opus-recorder/dist/decoder/decoderWorker.min.js": {
       "bytes": 205639,
       "imports": []
@@ -60,7 +69,7 @@
       ]
     },
     "core.js": {
-      "bytes": 4310,
+      "bytes": 4584,
       "imports": [
         {
           "path": "liveStream.js",
@@ -71,13 +80,17 @@
           "kind": "import-statement"
         },
         {
+          "path": "randomStream.js",
+          "kind": "import-statement"
+        },
+        {
           "path": "workerPool.js",
           "kind": "import-statement"
         }
       ]
     },
     "syllid.js": {
-      "bytes": 543,
+      "bytes": 597,
       "imports": [
         {
           "path": "core.js",
@@ -112,6 +125,9 @@
         "player.js": {
           "bytesInOutput": 4426
         },
+        "randomStream.js": {
+          "bytesInOutput": 3340
+        },
         "modules/opus-recorder/dist/decoder/decoderWorker.min.js": {
           "bytesInOutput": 205150
         },
@@ -119,13 +135,13 @@
           "bytesInOutput": 2673
         },
         "core.js": {
-          "bytesInOutput": 2912
+          "bytesInOutput": 3057
         },
         "syllid.js": {
-          "bytesInOutput": 397
+          "bytesInOutput": 444
         }
       },
-      "bytes": 225909
+      "bytes": 229441
     }
   }
 }

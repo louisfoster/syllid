@@ -1,5 +1,11 @@
-import type { Syllid, SyllidContextInterface } from "../build/syllid.js"
+import type { IDMessageItem, Syllid, SyllidContextInterface } from "../build/syllid.js"
 import { UI } from "./ui.js"
+
+enum StreamType
+{
+	live = `live`,
+	random = `random`
+}
 
 class App implements SyllidContextInterface
 {
@@ -10,6 +16,8 @@ class App implements SyllidContextInterface
 	private startBtn: HTMLButtonElement
 
 	private ui: Record<string, UI>
+
+	private input: HTMLInputElement
 
 	constructor()
 	{
@@ -26,6 +34,9 @@ class App implements SyllidContextInterface
 		this.startBtn.addEventListener( `click`, this.load )
 
 		this.ui = {}
+
+		this.input = document.createElement( `input` )
+
 	}
 
 	private existsOrThrow<T>( item: unknown, selector: string )
@@ -48,30 +59,42 @@ class App implements SyllidContextInterface
 		this.syllid?.init()
 			.then( () =>
 			{
-				const input = document.createElement( `input` )
+				this.el.appendChild( this.input )
 
-				const btn = document.createElement( `button` )
-
-				btn.textContent = `Add`
-
-				btn.addEventListener( `click`, () => 
-				{
-					this.addStream( input.value )
-				} )
-
-				this.el.appendChild( input )
-
-				this.el.appendChild( btn )
+				Object.values( StreamType ).forEach( type => this.btn( type ) )
 			} )
 	}
 
-	private addStream( url: string )
+	private btn( type: StreamType )
+	{
+		const btn = document.createElement( `button` )
+
+		btn.textContent = `Add ${type}`
+
+		btn.addEventListener( `click`, () => 
+		{
+			this.addStream( this.input.value, type )
+		} )
+
+		this.el.appendChild( btn )
+	}
+
+	private addStream( url: string, type: StreamType )
 	{
 		if ( !this.syllid ) throw Error( `Must init syllid` )
 
 		const id = this.getID()
 
-		this.syllid.addLiveStream( id, url )
+		switch( type )
+		{
+			case StreamType.live:
+				this.syllid.addLiveStream( id, url )
+
+				break
+
+			case StreamType.random:
+				this.syllid.addRandomStream( id, url )
+		}
 
 		const container = document.createElement( `div` )
 
@@ -119,7 +142,7 @@ class App implements SyllidContextInterface
 		console.error( error )
 	}
 
-	public onPlayingSegments( idList: any[] ): void
+	public onPlayingSegments( idList: IDMessageItem[] ): void
 	{
 		for ( const { sourceID, bufferID } of idList )
 		{

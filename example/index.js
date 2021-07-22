@@ -1,9 +1,15 @@
 import { UI } from "./ui.js";
+var StreamType;
+(function (StreamType) {
+    StreamType["live"] = "live";
+    StreamType["random"] = "random";
+})(StreamType || (StreamType = {}));
 class App {
     syllid;
     el;
     startBtn;
     ui;
+    input;
     constructor() {
         this.load = this.load.bind(this);
         this.start = this.start.bind(this);
@@ -12,6 +18,7 @@ class App {
         this.startBtn = this.getEl(`#startBtn`);
         this.startBtn.addEventListener(`click`, this.load);
         this.ui = {};
+        this.input = document.createElement(`input`);
     }
     existsOrThrow(item, selector) {
         if (!item) {
@@ -25,21 +32,29 @@ class App {
     start() {
         this.syllid?.init()
             .then(() => {
-            const input = document.createElement(`input`);
-            const btn = document.createElement(`button`);
-            btn.textContent = `Add`;
-            btn.addEventListener(`click`, () => {
-                this.addStream(input.value);
-            });
-            this.el.appendChild(input);
-            this.el.appendChild(btn);
+            this.el.appendChild(this.input);
+            Object.values(StreamType).forEach(type => this.btn(type));
         });
     }
-    addStream(url) {
+    btn(type) {
+        const btn = document.createElement(`button`);
+        btn.textContent = `Add ${type}`;
+        btn.addEventListener(`click`, () => {
+            this.addStream(this.input.value, type);
+        });
+        this.el.appendChild(btn);
+    }
+    addStream(url, type) {
         if (!this.syllid)
             throw Error(`Must init syllid`);
         const id = this.getID();
-        this.syllid.addLiveStream(id, url);
+        switch (type) {
+            case StreamType.live:
+                this.syllid.addLiveStream(id, url);
+                break;
+            case StreamType.random:
+                this.syllid.addRandomStream(id, url);
+        }
         const container = document.createElement(`div`);
         this.ui[id] = new UI(id, container, this.syllid);
         this.el.appendChild(container);

@@ -1,5 +1,6 @@
 import { LiveStream, LiveStreamHandler, LiveStreamProvider } from "./liveStream"
 import { Player, PlayerHandler } from "./player"
+import { RandomStream } from "./randomStream"
 import type { SyllidContextInterface } from "./syllid"
 import { WorkerPool } from "./workerPool"
 
@@ -53,6 +54,8 @@ implements
 		this.stop = this.stop.bind( this )
 
 		this.addLiveStream = this.addLiveStream.bind( this )
+
+		this.addRandomStream = this.addRandomStream.bind( this )
 
 		this.getChannels = this.getChannels.bind( this )
 
@@ -248,6 +251,15 @@ implements
 		this.init()
 
 		this.streams[ id ] = new LiveStream( id, endpoint, 10, this, this )
+	}
+
+	public addRandomStream( id: string, endpoint: string ): void
+	{
+		if ( this.streams[ id ] ) return
+
+		this.init()
+
+		this.streams[ id ] = new RandomStream( id, endpoint, 10, this, this )
 	}
 
 	public handleSegment( streamID: string, data: Float32Array, segmentID: string ): void

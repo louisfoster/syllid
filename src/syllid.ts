@@ -43,6 +43,8 @@ export class Syllid
 
 	public addLiveStream: ( id: string, endpoint: string ) => void
 
+	public addRandomStream: ( id: string, endpoint: string ) => void
+
 
 	/**
 	 * Syllid Lib Interface
@@ -65,6 +67,8 @@ export class Syllid
 		this.stopStreamChannel = this.core.stopStreamChannel
 
 		this.addLiveStream = this.core.addLiveStream
+
+		this.addRandomStream = this.core.addRandomStream
 	}
 
 	public stop(): this

@@ -22,6 +22,7 @@ export declare class Syllid {
     startStreamChannel: (streamID: string, channelIndex: number) => void;
     stopStreamChannel: (streamID: string, channelIndex: number) => void;
     addLiveStream: (id: string, endpoint: string) => void;
+    addRandomStream: (id: string, endpoint: string) => void;
     /**
      * Syllid Lib Interface
      * @param context Interface to the context importing this lib

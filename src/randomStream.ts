@@ -14,7 +14,7 @@ enum State
 	running
 }
 
-export interface LiveStreamHandler
+export interface RandomStreamHandler
 {
 	handleSegment: ( streamID: string, segment: Float32Array, id: string ) => void
 
@@ -25,14 +25,16 @@ export interface LiveStreamHandler
 	noData: ( id: string ) => void
 }
 
-export interface LiveStreamProvider
+export interface RandomStreamProvider
 {
+	randomInt: ( min: number, max: number ) => number
+	
 	validatePlaylistResponse: ( items: Playlist ) => Playlist
 
 	decodeSegment: ( data: Uint8Array ) => Promise<Float32Array>
 }
 
-export class LiveStream implements Stream
+export class RandomStream implements Stream
 {
 	// Buffered data
 	private segments: CircularBuffer<Segment>
@@ -60,12 +62,18 @@ export class LiveStream implements Stream
 
 	private state: State
 
+	public location: string
+
+	public freshLocation: boolean
+
+	public count: number
+
 	constructor(
 		private id: string,
 		private endpoint: string,
 		private bufferSize: number = 10,
-		private handler: LiveStreamHandler,
-		private provider: LiveStreamProvider )
+		private handler: RandomStreamHandler,
+		private provider: RandomStreamProvider )
 	{
 		this.bindFns()
 
@@ -84,6 +92,12 @@ export class LiveStream implements Stream
 		this.noUpdateCount = 0
 
 		this.checkInterval = 0
+
+		this.count = 0
+
+		this.location = ``
+
+		this.freshLocation = false
 
 		this.state = State.stopped
 
@@ -112,7 +126,7 @@ export class LiveStream implements Stream
 			return
 		}
 
-		const path: string = this.getPath()
+		const path: string = this.getPath( this.endpoint )
 
 		if ( !path ) return
 
@@ -141,22 +155,51 @@ export class LiveStream implements Stream
 			} )
 	}
 
-	private getPath(): string 
+	public getPath( location: string ): string 
 	{
+		this.setFreshLocation( location )
+
+		this.count = this.count - 1
+
 		return this.idList.length > 0
 			? new URL(
 				`${this.idList[ this.idList.length - 1 ]}`,
-				this.endpoint
+				this.location
 			).toString()
-			: this.endpointWithQuery()
+			: !this.location // if empty value
+				? this.location
+				: this.endpointWithQuery( this.location )
 	}
 
-	private endpointWithQuery(): string
+	private setFreshLocation( location: string ): void
 	{
-		const _url = new URL( this.endpoint )
+		if ( this.count > 0 ) return
+
+		this.count = this.provider.randomInt( 0, 5 )
+
+		this.location = location
+
+		this.idList = []
+
+		this.freshLocation = true
+	}
+
+	public setStaleLocation( location: string ): void
+	{
+		if ( this.freshLocation )
+		{
+			this.location = location
+			
+			this.freshLocation = false
+		}
+	}
+
+	private endpointWithQuery( endpoint: string ): string
+	{
+		const _url = new URL( endpoint )
 
 		if( !_url.searchParams.has( `start` ) )
-			_url.searchParams.append( `start`, `latest` )
+			_url.searchParams.append( `start`, `random` )
 
 		return _url.toString()
 	}
@@ -342,6 +385,10 @@ export class LiveStream implements Stream
 		if ( this.state === State.stopped ) return
 
 		this.state = State.stopped
+
+		this.location = ``
+
+		this.count = 0
 
 		clearInterval( this.checkInterval )
 	}

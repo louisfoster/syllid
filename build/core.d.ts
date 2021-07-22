@@ -34,6 +34,7 @@ export declare class Core implements PlayerHandler, LiveStreamHandler, LiveStrea
     onWarning(message: string | Error | ErrorEvent): void;
     onFailure(error: string | Error | ErrorEvent): void;
     addLiveStream(id: string, endpoint: string): void;
+    addRandomStream(id: string, endpoint: string): void;
     handleSegment(streamID: string, data: Float32Array, segmentID: string): void;
     noData(id: string): void;
 }

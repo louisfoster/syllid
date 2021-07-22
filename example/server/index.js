@@ -88,8 +88,8 @@ app.get('/playlist/:num', (req, res) =>
 	const num = parseInt(req.params.num)
 
 	if (req.query.start === `random`)
-		res.json(fromID(data[num].ids[Math.floor(Math.random() * data[num].ids.length)]))
-	if (req.query.start === `latest`)
+		res.json(fromID(num, data[num].ids[Math.floor(Math.random() * data[num].ids.length)]))
+	else if (req.query.start === `latest`)
 		res.json(data[num].urls.slice(data[num].urls.length - 5))
 	else res.json(data[num].urls)
 })
