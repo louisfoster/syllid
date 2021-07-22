@@ -37,37 +37,35 @@ const ids2 = [
 
 const mapped2 = ids2.reduce((obj, curr, i) => ({...obj, [curr]: i}), {})
 
+const toData = (index, segmentID) =>
+({
+	streamPublicID: `12345`,
+	segmentID,
+	segmentURL: `http://localhost:${PORT}/audio/${index}/${segmentID}.opus`
+})
+
 const data = [
 	{
 		ids,
 		mapped,
-		path: 'example/audio'
+		index: 0,
+		urls: ids.map(id => toData(0, id))
 	},
 	{
 		ids: ids2,
 		mapped: mapped2,
-		path: 'example/audio2'
+		index: 1,
+		urls: ids2.map(id => toData(1, id))
 	}
 ]
 
-const selected = 0
-
-const streamPublicID = `12345`
-
-const urls = data[selected].ids.map(segmentID =>
-	({
-		streamPublicID,
-		segmentID,
-		segmentURL: `http://localhost:${PORT}/audio/${segmentID}.opus`
-	}))
-
-const fromID = id =>
+const fromID = (i, id) =>
 {
-	const index = data[selected].mapped[id]
+	const index = data[i].mapped[id]
 
-	return (index === data[selected].ids.length - 1) 
-		? urls.slice(0, 5)
-		: urls.slice(index + 1, index + 6)
+	return (index === data[i].ids.length - 1) 
+		? data[i].urls.slice(0, 5)
+		: data[i].urls.slice(index + 1, index + 6)
 }
 
 const app = express()
@@ -76,28 +74,30 @@ app.use(express.static('example'))
 
 app.use('/build', express.static('build'))
 
-app.use('/audio', express.static(data[selected].path))
+app.use('/audio', express.static('example/audio'))
 
 app.get('/decoderWorker.min.wasm', (req, res) => res.redirect(`/build/decoderWorker.min.wasm`))
 
-app.get('/playlist/:id', (req, res) =>
+app.get('/playlist/:num/:id', (req, res) =>
 {
-	res.json(fromID(req.params.id))
+	res.json(fromID(parseInt(req.params.num), req.params.id))
 })
 
-app.get('/playlist', (req, res) =>
+app.get('/playlist/:num', (req, res) =>
 {
+	const num = parseInt(req.params.num)
+
 	if (req.query.start === `random`)
-		res.json(fromID(data[selected].ids[Math.floor(Math.random() * data[selected].ids.length)]))
+		res.json(fromID(data[num].ids[Math.floor(Math.random() * data[num].ids.length)]))
 	if (req.query.start === `latest`)
-		res.json(urls.slice(urls.length - 5))
-	else res.json(urls)
+		res.json(data[num].urls.slice(data[num].urls.length - 5))
+	else res.json(data[num].urls)
 })
 
 // test for group redirects
 app.get('/playlisto', (req, res) =>
 {
-	let path = `/playlist`
+	let path = `/playlist/${Math.floor(Math.random() * this.data.length)}`
 	if (req.query.start === `random`) path += `?start=random`
 	res.redirect(path)
 })

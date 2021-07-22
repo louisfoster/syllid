@@ -49,14 +49,12 @@ interface SourceData
 	id: string
 	channels: ChannelState[]
 	state: SourceState
-	connection: GainNode
 	index: number
 }
 
 interface Connector
 {
-	input: ChannelMergerNode
-	output: GainNode
+	inputs: GainNode[]
 	count: number
 }
 
@@ -71,6 +69,10 @@ export interface PlayerHandler
 	onStartSource: ( id: string ) => void
 
 	onStopSource: ( id: string ) => void
+
+	onStartSourceChannel: ( id: string, channel: number ) => void
+
+	onStopSourceChannel: ( id: string, channel: number ) => void
 }
 
 export class Player
@@ -79,21 +81,46 @@ export class Player
 
 	private ctx?: AudioContext
 
+	/**
+	 * Outputs audio from buffers,
+	 * each buffer source === node output
+	 * All outputs have 1 channel
+	 */
 	private worklet?: AudioWorkletNode
 
+	/**
+	 * Each output channel has a connector
+	 * A connector has a n inputs.
+	 * A connector connects to the output merger.
+	 */
 	private connectors: Connector[]
 
+	/**
+	 * A source contains reference to a buffer
+	 */
 	private sources: Record<string, SourceData>
 
+	/**
+	 * Source index map associates the source ID
+	 * with its index in the worklet node outputs
+	 */
 	private sourceIndexMap: string[]
 
+	/**
+	 * The output merger connects the connectors
+	 * to the destination channels.
+	 */
 	private outputMerger?: ChannelMergerNode
+
+	private streamCount: number
 
 	constructor( private handler: PlayerHandler )
 	{
 		this.bindFns()
 
 		this.channels = 0
+
+		this.streamCount = 10
 
 		this.connectors = []
 
@@ -140,29 +167,27 @@ export class Player
 
 		if ( maxChannelCount > channelCount ) this.ctx.destination.channelCount = this.channels
 
-		this.ctx.destination.channelInterpretation = `discrete`
-
 		this.outputMerger = this.ctx.createChannelMerger( this.channels )
 
 		this.outputMerger.connect( this.ctx.destination )
-
+		
 		for ( let n = 0; n < this.channels; n += 1 )
 		{
-			const output = this.ctx.createGain()
+			const inputs: GainNode[] = []
 
-			output.gain.setValueAtTime( 0, 0 )
+			for ( let i = 0; i < this.streamCount; i += 1 )
+			{
+				inputs.push( this.ctx.createGain() )
 
-			output.connect( this.outputMerger, 0, n )
+				inputs[ i ].connect( this.outputMerger, 0, n )
 
-			const input = this.ctx.createChannelMerger( 32 )
+				inputs[ i ].gain.setValueAtTime( 0, 0 )
+			}
 
 			this.connectors[ n ] = {
-				input,
-				output,
+				inputs,
 				count: 0
 			}
-	
-			this.connectors[ n ].input.connect( output )
 		}
 	}
 
@@ -200,19 +225,34 @@ export class Player
 
 		if ( !this.ctx ) throw Error( `No audio context` )
 
-		await this.ctx?.audioWorklet.addModule( this.createWorkerScriptBlob( worker ).toString() )
+		await this.ctx.audioWorklet.addModule( this.createWorkerScriptBlob( worker ).toString() )
 
-		this.worklet = new AudioWorkletNode( this.ctx, `playerWorklet`, { numberOfInputs: 0, numberOfOutputs: 32 } )
+		this.worklet = new AudioWorkletNode(
+			this.ctx, 
+			`playerWorklet`, 
+			{ 
+				numberOfInputs: 0,
+				numberOfOutputs: this.streamCount,
+				outputChannelCount: Array( this.streamCount ).fill( 1 ) 
+			} )
 
 		this.worklet.port.onmessage = event => this.handleWorkletMessage( event )
+
+		// For each connector, attach the worklet
+		for ( let c = 0; c < this.connectors.length; c += 1 )
+		{
+			// For each output
+			for ( let i = 0; i < this.streamCount; i += 1 )
+			{
+				this.worklet.connect( this.connectors[ c ].inputs[ i ], i, 0 )
+			}
+		}
 
 		this.ctx.resume()
 	}
 
 	private handleWorkletMessage( event: MessageEvent<WorkletMessage> )
 	{
-		// console.log( `got worklet message`, event )
-		
 		if ( event.data.type === WorkletMessageType.feed )
 		{
 			// Get more data for a source
@@ -261,7 +301,6 @@ export class Player
 
 		this.sources[ id ] = {
 			channels: Array( this.channels ).fill( ChannelState.muted ),
-			connection,
 			index,
 			state: SourceState.inactive,
 			id
@@ -270,45 +309,11 @@ export class Player
 		this.worklet?.port.postMessage( this.addMessage( id, index ) )
 	}
 
-	public feed( sourceID: string, bufferID: string, data: Float32Array ): void
-	{
-		this.worklet?.port.postMessage(
-			this.bufferMessage( sourceID, bufferID, data ),
-			[ data.buffer ] )
-	}
-
-	public startSource( id: string ): void
-	{
-		if ( !this.ctx )
-		{
-			this.handler.onWarning( `No audio context available.` )
-
-			return
-		}
-
-		// check if source previously added
-		// create if not, send add message
-		this.addSource( id )
-
-		// send active state message
-		this.sources[ id ].state = SourceState.active
-
-		this.worklet?.connect( this.sources[ id ].connection, this.sources[ id ].index, 0 )
-
-		this.worklet?.port.postMessage( this.stateMessage( id, true ) )
-
-		// fade in source gain
-		this.sources[ id ].connection.gain.linearRampToValueAtTime(
-			1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
-
-		this.handler.onStartSource( id )
-	}
-
 	private getAvailableIndex( id: string ): number | undefined
 	{
 		const inactive: number[] = []
 
-		for ( let i = 0; i < 32; i += 1 )
+		for ( let i = 0; i < this.streamCount; i += 1 )
 		{
 			if ( !this.sourceIndexMap[ i ] )
 			{
@@ -334,31 +339,57 @@ export class Player
 		return
 	}
 
+	public feed( sourceID: string, bufferID: string, data: Float32Array ): void
+	{
+		this.worklet?.port.postMessage(
+			this.bufferMessage( sourceID, bufferID, data ),
+			[ data.buffer ] )
+	}
+
+	public startSource( id: string ): void
+	{
+		if ( !this.ctx )
+		{
+			this.handler.onWarning( `No audio context available.` )
+
+			return
+		}
+
+		// check if source previously added
+		// create if not, send add message
+		this.addSource( id )
+
+		// send active state message
+		this.sources[ id ].state = SourceState.active
+
+		this.worklet?.port.postMessage( this.stateMessage( id, true ) )
+
+		this.handler.onStartSource( id )
+	}
+
 	public stopSource( sourceID: string ): void
 	{
 		if ( !this.sources[ sourceID ] ) return
+
+		let activeChannel = false
 
 		// stop all active channels for source
 		for ( let i = 0; i < this.channels; i += 1 )
 		{
 			if ( this.sources[ sourceID ].channels[ i ] !== ChannelState.muted )
 			{
-				this.stopSourceChannel( sourceID, i )
+				this.stopSourceChannel( sourceID, i, () => activeChannel = true )
 			}
 		}
 
-		// fade out gain
-		this.sources[ sourceID ].connection.gain.linearRampToValueAtTime(
-			0, ( this.ctx?.currentTime ?? 0 ) + 1 )
-
-		this.handler.onStopSource( sourceID )
+		if ( !activeChannel ) this.handler.onStopSource( sourceID )
 
 		// send inactive state message
 		setTimeout( () => 
 		{
 			this.worklet?.port.postMessage( this.stateMessage( sourceID, false ) )
 
-			this.worklet?.disconnect( this.sources[ sourceID ].connection, this.sources[ sourceID ].index, 0 )
+			if ( activeChannel ) this.handler.onStopSource( sourceID )
 		}, 1000 )
 	}
 
@@ -370,53 +401,39 @@ export class Player
 
 		// connect source gain node to merger channel node
 		if ( this.sources[ sourceID ]?.channels[ channel ] !== ChannelState.muted ) return
-
+		
 		this.sources[ sourceID ].channels[ channel ] = ChannelState.active
 
-		this.sources[ sourceID ].connection.connect(
-			this.connectors[ channel ].input, 0, this.sources[ sourceID ].index )
+		this.connectors[ channel ].inputs[ this.sources[ sourceID ].index ].gain.linearRampToValueAtTime(
+			1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
 
-		this.connectors[ channel ].count += 1
+		this.handler.onStartSourceChannel( sourceID, channel )
 
-		// if only source connected, fade in merger gain
-		if ( this.connectors[ channel ].count === 1 )
+		setTimeout( () => 
 		{
-			this.connectors[ channel ].output.gain.linearRampToValueAtTime(
-				1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
-		}
+			this.connectors[ channel ].count += 1
+		}, 1000 )
 	}
 
-	public stopSourceChannel( sourceID: string, channel: number ): void
+	public stopSourceChannel( sourceID: string, channel: number, onActive?: () => void ): void
 	{
 		if ( !this.sources[ sourceID ] ) return
 
-		// if final source connected to channel
-		// fade out channel merger
-		this.fadeOutChannel( channel )
-			.then( () =>
-			{
-				// disconnect from merger
-				this.sources[ sourceID ].connection.disconnect(
-					this.connectors[ channel ].input, 0, this.sources[ sourceID ].index )
-			} )
-	}
+		if ( this.sources[ sourceID ].channels[ channel ] !== ChannelState.active ) return
 
-	private fadeOutChannel( channel: number ): Promise<boolean>
-	{
-		return new Promise( resolve =>
+		onActive?.()
+
+		this.sources[ sourceID ].channels[ channel ] = ChannelState.muted
+
+		this.connectors[ channel ].inputs[ this.sources[ sourceID ].index ].gain.linearRampToValueAtTime(
+			0.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+
+		setTimeout( () => 
 		{
-			if ( this.connectors[ channel ].count === 1 )
-			{
-				this.connectors[ channel ].output.gain.linearRampToValueAtTime(
-					0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+			this.connectors[ channel ].count -= 1
 
-				setTimeout( () => resolve( true ) )
-			}
-			else
-			{
-				resolve( false )
-			}
-		} )
+			this.handler.onStopSourceChannel( sourceID, channel )
+		}, 1000 )
 	}
 
 	public sampleRate(): number

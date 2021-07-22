@@ -1,11 +1,11 @@
 {
   "inputs": {
     "web_modules/circular_buffer_js.js": {
-      "bytes": 1571,
+      "bytes": 2216,
       "imports": []
     },
     "liveStream.js": {
-      "bytes": 4492,
+      "bytes": 4782,
       "imports": [
         {
           "path": "web_modules/circular_buffer_js.js",
@@ -18,7 +18,7 @@
       "imports": []
     },
     "playerWorklet.js": {
-      "bytes": 3098,
+      "bytes": 3125,
       "imports": []
     },
     "web_modules/audioworklet-polyfill.js": {
@@ -26,7 +26,7 @@
       "imports": []
     },
     "player.js": {
-      "bytes": 7296,
+      "bytes": 7171,
       "imports": [
         {
           "path": "__snowpack__/env.js",
@@ -60,7 +60,7 @@
       ]
     },
     "syllid.js": {
-      "bytes": 3060,
+      "bytes": 3234,
       "imports": [
         {
           "path": "liveStream.js",
@@ -86,22 +86,22 @@
       "entryPoint": "syllid.js",
       "inputs": {
         "web_modules/circular_buffer_js.js": {
-          "bytesInOutput": 1415
+          "bytesInOutput": 1969
         },
         "liveStream.js": {
-          "bytesInOutput": 2726
+          "bytesInOutput": 2997
         },
         "__snowpack__/env.js": {
           "bytesInOutput": 55
         },
         "playerWorklet.js": {
-          "bytesInOutput": 3069
+          "bytesInOutput": 3096
         },
         "web_modules/audioworklet-polyfill.js": {
           "bytesInOutput": 2254
         },
         "player.js": {
-          "bytesInOutput": 4642
+          "bytesInOutput": 4426
         },
         "modules/opus-recorder/dist/decoder/decoderWorker.min.js": {
           "bytesInOutput": 205150
@@ -110,10 +110,10 @@
           "bytesInOutput": 2673
         },
         "syllid.js": {
-          "bytesInOutput": 1858
+          "bytesInOutput": 1974
         }
       },
-      "bytes": 223863
+      "bytes": 224615
     }
   }
 }

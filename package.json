@@ -45,6 +45,6 @@
 	},
 	"dependencies": {
 		"audioworklet-polyfill": "^1.1.2",
-		"circular_buffer_js": "^0.15.10"
+		"circular_buffer_js": "^1.0.1"
 	}
 }

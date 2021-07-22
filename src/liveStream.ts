@@ -63,7 +63,7 @@ export class LiveStream implements Stream
 	constructor(
 		private id: string,
 		private endpoint: string,
-		private bufferSize: number = 100,
+		private bufferSize: number = 10,
 		private handler: LiveStreamHandler,
 		private provider: LiveStreamProvider )
 	{
@@ -97,20 +97,21 @@ export class LiveStream implements Stream
 		this.checkNewSegments = this.checkNewSegments.bind( this )
 	}
 
-	private startCheckLoop()
-	{
-		// Get more segment URLs
-		this.checkNewSegments()
-
-		this.checkInterval = window.setInterval( () => this.checkNewSegments(), 3000 )
-	}
-
 	/**
 	 * Check if new segments are available
 	 * Add to segmentRef list
 	 */
 	private checkNewSegments()
 	{
+		if ( this.fileList.length - this.refCursor > this.bufferSize * 1.5 )
+		{
+			this.checkInterval = window.setTimeout(
+				() => this.checkNewSegments(),
+				this.bufferSize * 1000 )
+
+			return
+		}
+
 		const path: string = this.getPath()
 
 		if ( !path ) return
@@ -122,6 +123,8 @@ export class LiveStream implements Stream
 			{
 				if ( response.status !== 200 )
 				{
+					this.noUpdate()
+
 					throw Error( `Invalid response from endpoint.` )
 				}
 
@@ -137,7 +140,12 @@ export class LiveStream implements Stream
 			.then( ( items: Playlist ) => this.provider.validatePlaylistResponse( items ) )
 			.then( items => this.addItemsFromPlaylist( items ) )
 			.then( () => this.updateBuffer() )
-			.catch( ( e: Error ) => this.handler.onWarning( e.message ) )
+			.catch( ( e: Error ) => 
+			{
+				this.handler.onWarning( e.message )
+
+				this.noUpdate()
+			} )
 	}
 
 	private getPath(): string 
@@ -176,6 +184,10 @@ export class LiveStream implements Stream
 			this.noUpdateCount = 0
 		}
 
+		this.checkInterval = window.setTimeout(
+			() => this.checkNewSegments(),
+			Math.max( 0.5, playlist.length - 1 ) * 1000 )
+
 		for ( const { segmentID, segmentURL } of playlist )
 		{
 			this.fileList.push( segmentURL )
@@ -189,10 +201,16 @@ export class LiveStream implements Stream
 		this.noUpdateCount += 1
 
 		if ( this.noUpdateCount > 5 )
-		{
+		{	
 			this.handler.noData( this.id )
 
 			this.stop()
+		}
+		else
+		{
+			this.checkInterval = window.setTimeout(
+				() => this.checkNewSegments(),
+				Math.round( Math.exp( this.noUpdateCount ) * ( 100 / this.noUpdateCount ) ) )
 		}
 	}
 
@@ -208,24 +226,15 @@ export class LiveStream implements Stream
 	 */
 	private async updateBuffer()
 	{
-		if ( this.updateLock || this.segments.full() ) return
+		if ( this.updateLock || this.segments.isFull ) return
 
 		this.updateLock = true
 
-		const count = this.segments.available()
-
-		let noURL = false
-
-		for ( let i = 0; i < count; i += 1 )
+		while( this.segments.available )
 		{
 			const url = this.fileList[ this.refCursor ]
 
-			if ( !url )
-			{
-				noURL = true
-
-				break
-			}
+			if ( !url ) break
 
 			await this.getBuffer( url )
 
@@ -233,8 +242,6 @@ export class LiveStream implements Stream
 		}
 
 		this.updateLock = false
-
-		if ( count !== 0 && !noURL ) this.updateBuffer()
 	}
 
 	/**
@@ -312,7 +319,7 @@ export class LiveStream implements Stream
 		// Maximum segments to load is 10
 		// This is also the limit of segments returned
 		// When requesting latest audio
-		const count = Math.min( 10, this.segments.length() )
+		const count = Math.min( 5, this.segments.length )
 
 		for ( let i = 0; i < count; i += 1 )
 		{
@@ -334,7 +341,7 @@ export class LiveStream implements Stream
 
 		this.state = State.running
 
-		this.startCheckLoop()
+		this.checkNewSegments()
 	}
 
 	public stop(): void

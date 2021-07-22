@@ -7,6 +7,8 @@ export interface SyllidContextInterface {
     onPlaying: (id: string) => void;
     onStopped: (id: string) => void;
     onNoData: (id: string) => void;
+    onUnmuteChannel: (streamID: string, channelIndex: number) => void;
+    onMuteChannel: (streamID: string, channelIndex: number) => void;
 }
 export declare class Syllid implements PlayerHandler, LiveStreamHandler, LiveStreamProvider {
     private context;
@@ -28,6 +30,8 @@ export declare class Syllid implements PlayerHandler, LiveStreamHandler, LiveStr
     onPlayingBuffers(idList: IDMessageItem[]): void;
     onStartSource(id: string): void;
     onStopSource(id: string): void;
+    onStartSourceChannel(id: string, channel: number): void;
+    onStopSourceChannel(id: string, channel: number): void;
     decodeSegment(data: Uint8Array): Promise<Float32Array>;
     private getWorkerID;
     init(): Promise<void>;

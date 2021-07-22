@@ -15,6 +15,10 @@ export interface SyllidContextInterface
 	onStopped: ( id: string ) => void
 
 	onNoData: ( id: string ) => void
+
+	onUnmuteChannel: ( streamID: string, channelIndex: number ) => void
+
+	onMuteChannel: ( streamID: string, channelIndex: number ) => void
 }
 
 export class Syllid
@@ -118,6 +122,16 @@ implements
 		this.context.onStopped( id )
 	}
 
+	public onStartSourceChannel( id: string, channel: number ): void
+	{
+		this.context.onUnmuteChannel( id, channel )
+	}
+
+	public onStopSourceChannel( id: string, channel: number ): void
+	{
+		this.context.onMuteChannel( id, channel )
+	}
+
 	public async decodeSegment( data: Uint8Array ): Promise<Float32Array>
 	{
 		const workerID = await this.getWorkerID()
@@ -211,7 +225,7 @@ implements
 
 		this.init()
 
-		this.streams[ id ] = new LiveStream( id, endpoint, 100, this, this )
+		this.streams[ id ] = new LiveStream( id, endpoint, 10, this, this )
 	}
 
 	public handleSegment( streamID: string, data: Float32Array, segmentID: string ): void

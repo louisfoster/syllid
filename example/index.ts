@@ -1,4 +1,5 @@
 import type { Syllid, SyllidContextInterface } from "../build/syllid.js"
+import { UI } from "./ui.js"
 
 class App implements SyllidContextInterface
 {
@@ -8,17 +9,15 @@ class App implements SyllidContextInterface
 
 	private startBtn: HTMLButtonElement
 
-	private stream: {id: string; endpoint: string}
+	private ui: Record<string, UI>
 
 	constructor()
 	{
 		this.load = this.load.bind( this )
 
-		this.btnClick = this.btnClick.bind( this )
-
 		this.start = this.start.bind( this )
 
-		this.playToggle = this.playToggle.bind( this )
+		this.addStream = this.addStream.bind( this )
 
 		this.el = this.getEl( `#main` )
 
@@ -26,9 +25,7 @@ class App implements SyllidContextInterface
 
 		this.startBtn.addEventListener( `click`, this.load )
 
-		this.stream = {
-			id: `${Math.floor( Math.random() * 1000000 )}`,
-			endpoint: new URL( `/playlist`, window.origin ).toString() }
+		this.ui = {}
 	}
 
 	private existsOrThrow<T>( item: unknown, selector: string )
@@ -46,98 +43,46 @@ class App implements SyllidContextInterface
 		return this.existsOrThrow( document.querySelector( selector ), selector )
 	}
 
-	private btn( channel: number )
-	{
-		const b = document.createElement( `button` )
-
-		b.textContent = `Play channel ${channel}`
-
-		b.dataset.channel = `${channel}`
-
-		b.dataset.state = `mute`
-
-		b.addEventListener( `click`, this.btnClick )
-
-		this.el.appendChild( b )
-	}
-
-	private btnClick( event: MouseEvent )
-	{
-		const btn = event.target as HTMLButtonElement
-
-		const channel = parseInt( btn.dataset.channel ?? `-1`, 10 )
-
-		const state = btn.dataset.state
-
-		if ( state === `mute` )
-		{
-			this.syllid?.startStreamChannel( this.stream.id, channel )
-
-			btn.textContent = `Mute channel ${channel}`
-
-			btn.dataset.state = `playing`
-		}
-		else
-		{
-			this.syllid?.stopStreamChannel( this.stream.id, channel )
-
-			btn.textContent = `Umute channel ${channel}`
-
-			btn.dataset.state = `mute`
-		}
-	}
-
-	private playBtn()
-	{
-		const b = document.createElement( `button` )
-
-		b.textContent = `Play stream`
-
-		b.dataset.state = `stopped`
-
-		b.addEventListener( `click`, this.playToggle )
-
-		this.el.appendChild( b )
-	}
-
-	private playToggle( event: MouseEvent )
-	{
-		const btn = event.target as HTMLButtonElement
-
-		const state = btn.dataset.state
-
-		if ( state === `stopped` )
-		{
-			this.syllid?.startStream( this.stream.id )
-
-			btn.textContent = `Stop stream`
-
-			btn.dataset.state = `playing`
-		}
-		else
-		{
-			this.syllid?.stopStream( this.stream.id )
-
-			btn.textContent = `Play stream`
-
-			btn.dataset.state = `stopped`
-		}
-	}
-
 	private start()
 	{
 		this.syllid?.init()
 			.then( () =>
 			{
-				this.syllid?.addLiveStream( this.stream.id, this.stream.endpoint )
+				const input = document.createElement( `input` )
 
-				this.playBtn()
+				const btn = document.createElement( `button` )
 
-				for ( let c = 0; c < ( this.syllid?.getChannels() ?? 0 ); c++ )
+				btn.textContent = `Add`
+
+				btn.addEventListener( `click`, () => 
 				{
-					this.btn( c )
-				}
+					this.addStream( input.value )
+				} )
+
+				this.el.appendChild( input )
+
+				this.el.appendChild( btn )
 			} )
+	}
+
+	private addStream( url: string )
+	{
+		if ( !this.syllid ) throw Error( `Must init syllid` )
+
+		const id = this.getID()
+
+		this.syllid.addLiveStream( id, url )
+
+		const container = document.createElement( `div` )
+
+		this.ui[ id ] = new UI( id,  container, this.syllid )
+
+		this.el.appendChild( container )
+	}
+
+	private getID()
+	{
+		return `${Math.floor( Math.random() * 1000000 )}`
 	}
 
 	private load()
@@ -176,26 +121,35 @@ class App implements SyllidContextInterface
 
 	public onPlayingSegments( idList: any[] ): void
 	{
-		console.log( idList )
+		for ( const { sourceID, bufferID } of idList )
+		{
+			this.ui[ sourceID ].setSegmentPlaying( bufferID )
+		}
 	}
 
 	public onPlaying( id: string ): void
 	{
-		// btn.textContent = `Stop stream`
-
-		// btn.dataset.state = `playing`
+		this.ui[ id ].setPlaying()
 	}
 
 	public onStopped( id: string ): void
 	{
-		// btn.textContent = `Play stream`
+		this.ui[ id ].setStopped()
+	}
 
-		// btn.dataset.state = `stopped`
+	public onUnmuteChannel( streamID: string, channelIndex: number ): void
+	{
+		this.ui[ streamID ].setUnmute( channelIndex )
+	}
+
+	public onMuteChannel( streamID: string, channelIndex: number ): void
+	{
+		this.ui[ streamID ].setMute( channelIndex )
 	}
 
 	public onNoData( id: string ): void
 	{
-		//
+		this.ui[ id ].setNoData()
 	}
 }
 

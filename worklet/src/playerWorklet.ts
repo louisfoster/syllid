@@ -127,8 +127,6 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 		if ( index === undefined ) return
 
-		// console.log( `set state`, data.id, data.state )
-
 		this.sources[ index ].state = data.state
 	}
 
@@ -153,14 +151,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 			this.sources.push( this.newStreamItem( data.id ) )
 		}
 
-		// Feeding a buffer to a stopped channel restarts it
-		// if (!this.sources[ index ].state)
-		// this.sources[ index ].state = !this.sources[ index ].state
-
 		const key = this.bufferKey( index )
 
-		// console.log( `got buffer`, data.id, data.bufferID )
-		
 		this.sources[ index ][ key ] = {
 			buffer: data.buffer,
 			id: data.bufferID
@@ -212,8 +204,6 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 	private emitFeedRequest( streams: string[] ): FeedMessage
 	{
-		// console.log( `request data` )
-		
 		return {
 			streams,
 			type: EmitType.feed
@@ -227,24 +217,19 @@ class PlayerWorklet extends AudioWorkletProcessor
 	 */
 	process( _: Float32Array[][], outputs: Float32Array[][] ) 
 	{
-		// Just 1 output
-		// const output = outputs[ 0 ]
-
-		// const max = Math.min( this.channels.length, output.length )
-
 		try
 		{
 			const playingBuffer: IDMessageItem[] = []
 			
 			for ( let s = 0; s < this.sources.length; s += 1 )
-			{
+			{		
 				const source = this.sources[ s ]
 
-				if ( !source.state ) continue
+				if ( !source || !source.state ) continue
 
-				// for ( let channelIndex = 0; channelIndex < max; channelIndex += 1 ) 
-				// {
 				const output = outputs[ s ]
+
+				if ( !output ) continue
 
 				const channelBuffer = output[ 0 ]
 
@@ -307,7 +292,6 @@ class PlayerWorklet extends AudioWorkletProcessor
 						source.bufferState = BufferState.new
 					}
 				}
-				// }
 			}
 
 			this.onEndProcess( playingBuffer )
