@@ -32,7 +32,6 @@ export declare class LiveStream implements Stream {
     private state;
     constructor(id: string, endpoint: string, bufferSize: number, handler: LiveStreamHandler, provider: LiveStreamProvider);
     private bindFns;
-    private startCheckLoop;
     /**
      * Check if new segments are available
      * Add to segmentRef list

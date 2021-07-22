@@ -1,6 +1,10 @@
-import { LiveStream, LiveStreamHandler, LiveStreamProvider } from "./liveStream"
-import { Player, PlayerHandler } from "./player"
-import { WorkerPool } from "./workerPool"
+import { Core } from "./core"
+
+export interface IDMessageItem
+{
+	sourceID: string
+	bufferID: string
+}
 
 export interface SyllidContextInterface
 {
@@ -22,223 +26,51 @@ export interface SyllidContextInterface
 }
 
 export class Syllid
-implements
-	PlayerHandler,
-	LiveStreamHandler,
-	LiveStreamProvider
 {
-	public validatePlaylistResponse: ( items: Playlist ) => Playlist
+	private core: Core
 
-	private streams: Record<string, Stream>
+	public getChannels: () => number
 
-	private player: Player
+	public init: () => Promise<void>
 
-	private initialised: boolean
+	public startStream: ( id: string ) => void
 
-	private workerPool?: WorkerPool
+	public stopStream: ( id: string ) => void
+
+	public startStreamChannel: ( streamID: string, channelIndex: number ) => void
+
+	public stopStreamChannel: ( streamID: string, channelIndex: number ) => void
+
+	public addLiveStream: ( id: string, endpoint: string ) => void
+
 
 	/**
-	 * 
+	 * Syllid Lib Interface
 	 * @param context Interface to the context importing this lib
 	 */
 	constructor( private context: SyllidContextInterface ) 
 	{
-		this.bindFns()
+		this.core = new Core( this.context )
 
-		this.validatePlaylistResponse = this.validatePlaylist
+		this.getChannels = this.core.getChannels
 
-		this.player = new Player( this )
+		this.init = this.core.init
 
-		this.streams = {}
+		this.startStream = this.core.startStream
 
-		this.initialised = false
-	}
+		this.stopStream = this.core.stopStream
 
-	private bindFns()
-	{
-		this.stop = this.stop.bind( this )
-	}
+		this.startStreamChannel = this.core.startStreamChannel
 
-	public getChannels(): number
-	{
-		return this.player.channels
-	}
+		this.stopStreamChannel = this.core.stopStreamChannel
 
-	public randomInt( from: number, to: number ): number
-	{
-		if ( to < from ) return from
-		
-		return Math.floor( Math.random() * ( to - from ) + from )
-	}
-
-	private validatePlaylist( items: Playlist ): Playlist
-	{
-		if ( !Array.isArray( items ) ) 
-		{
-			throw Error( `Playlist is not an array.` )
-		}
-
-		items.forEach( ( i: PlaylistItem ): void => 
-		{
-			try 
-			{
-				new URL( i.segmentURL ).toString()
-			}
-			catch
-			{
-				throw Error( `${i.segmentURL} in playlist is invalid URL.` )
-			}
-
-			if ( !i.segmentID || typeof i.segmentID !== `string` ) 
-			{
-				throw Error( `${i.segmentID || `Missing ID`} in playlist is invalid ID.` )
-			}
-		} )
-
-		return items
-	}
-
-	public bufferSource( id: string ): void
-	{
-		// nextSegments request to stream
-		this.streams[ id ].nextSegments()
-	}
-
-	public onPlayingBuffers( idList: IDMessageItem[] ): void
-	{
-		// emit handler that segments are now playing
-		this.context.onPlayingSegments( idList )
-	}
-
-	public onStartSource( id: string ): void
-	{
-		// emit handler that stream is now playing
-		this.context.onPlaying( id )
-	}
-
-	public onStopSource( id: string ): void
-	{
-		// emit handler that stream is stopped playing
-		this.context.onStopped( id )
-	}
-
-	public onStartSourceChannel( id: string, channel: number ): void
-	{
-		this.context.onUnmuteChannel( id, channel )
-	}
-
-	public onStopSourceChannel( id: string, channel: number ): void
-	{
-		this.context.onMuteChannel( id, channel )
-	}
-
-	public async decodeSegment( data: Uint8Array ): Promise<Float32Array>
-	{
-		const workerID = await this.getWorkerID()
-
-		return new Promise( resolve =>
-		{
-			this.workerPool?.decode( workerID, data, resolve )
-		} )
-	}
-
-	private getWorkerID( res?: ( id: string ) => void )
-	{
-		return new Promise<string>( resolve =>
-		{
-			const id = this.workerPool?.getWorker()
-
-			const r = res ?? resolve
-
-			if ( !id ) setTimeout( () => this.getWorkerID( r ), 10 )
-			else r( id )
-		} )
-	}
-
-	public async init(): Promise<void>
-	{
-		if ( !this.initialised )
-		{
-			this.initialised = true
-
-			await this.player.init()
-
-			this.workerPool = new WorkerPool( 4, this, this.player.sampleRate() )
-		}
-	}
-
-	public startStream( id: string ): void
-	{
-		this.init()
-
-		this.streams[ id ]?.start()
-
-		this.player.startSource( id )
-	}
-	
-	public stopStream( id: string ): void
-	{
-		this.streams[ id ]?.stop()
-
-		this.player.stopSource( id )
-	}
-
-	public startStreamChannel( streamID: string, channelIndex: number ): void
-	{
-		if ( !this.streams[ streamID ] ) return
-
-		this.player.startSourceChannel( streamID, channelIndex )
-	}
-
-	public stopStreamChannel( streamID: string, channelIndex: number ): void
-	{
-		if ( !this.streams[ streamID ] ) return
-		
-		this.player.stopSourceChannel( streamID, channelIndex )
+		this.addLiveStream = this.core.addLiveStream
 	}
 
 	public stop(): this
 	{
-		this.player.stop()
-
-		for ( const stream in this.streams ) 
-		{
-			this.streams[ stream ].stop()
-		}
+		this.core.stop()
 
 		return this
-	}
-
-	public onWarning( message: string | Error | ErrorEvent ): void 
-	{
-		this.context.onWarning( message )
-	}
-
-	public onFailure( error: string | Error | ErrorEvent ): void 
-	{
-		this.context.onFailure( error )
-	}
-
-	public addLiveStream( id: string, endpoint: string ): void
-	{
-		if ( this.streams[ id ] ) return
-
-		this.init()
-
-		this.streams[ id ] = new LiveStream( id, endpoint, 10, this, this )
-	}
-
-	public handleSegment( streamID: string, data: Float32Array, segmentID: string ): void
-	{
-		this.player.feed( streamID, segmentID, data )
-	}
-
-	public noData( id: string ): void
-	{
-		// emit no data to context
-		// possibly stop player/ output
-		this.player.stopSource( id )
-
-		this.context.onNoData( id )
 	}
 }

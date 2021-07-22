@@ -5,7 +5,7 @@
       "imports": []
     },
     "liveStream.js": {
-      "bytes": 4782,
+      "bytes": 4728,
       "imports": [
         {
           "path": "web_modules/circular_buffer_js.js",
@@ -59,8 +59,8 @@
         }
       ]
     },
-    "syllid.js": {
-      "bytes": 3234,
+    "core.js": {
+      "bytes": 4310,
       "imports": [
         {
           "path": "liveStream.js",
@@ -72,6 +72,15 @@
         },
         {
           "path": "workerPool.js",
+          "kind": "import-statement"
+        }
+      ]
+    },
+    "syllid.js": {
+      "bytes": 543,
+      "imports": [
+        {
+          "path": "core.js",
           "kind": "import-statement"
         }
       ]
@@ -89,7 +98,7 @@
           "bytesInOutput": 1969
         },
         "liveStream.js": {
-          "bytesInOutput": 2997
+          "bytesInOutput": 2956
         },
         "__snowpack__/env.js": {
           "bytesInOutput": 55
@@ -109,11 +118,14 @@
         "workerPool.js": {
           "bytesInOutput": 2673
         },
+        "core.js": {
+          "bytesInOutput": 2912
+        },
         "syllid.js": {
-          "bytesInOutput": 1974
+          "bytesInOutput": 397
         }
       },
-      "bytes": 224615
+      "bytes": 225909
     }
   }
 }
