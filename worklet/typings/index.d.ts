@@ -85,5 +85,6 @@ interface SourceData
 	bufferCursor: number
 	totalBuffers: number
 	bufferState: `new` | `stale`
+	requested: boolean
 	[buffer: number]: BufferData
 }

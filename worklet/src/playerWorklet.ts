@@ -47,6 +47,10 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 	private sourceKey: Record<string, number>
 
+	private playingBuffer: IDMessageItem[]
+
+	private requestBuffer: string[]
+
 	constructor( options?: AudioWorkletNodeOptions )
 	{
 		super( options )
@@ -56,6 +60,10 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.sources = []
 
 		this.sourceKey = {}
+
+		this.playingBuffer = []
+
+		this.requestBuffer = []
 
 		this.port.onmessage = e => this.handleMessage( e )
 
@@ -90,6 +98,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 			bufferCursor: 0,
 			currentBuffer: 0,
 			state: false,
+			requested: false,
 			totalBuffers: 0,
 			bufferState: BufferState.new
 		}
@@ -128,6 +137,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 		if ( index === undefined ) return
 
 		this.sources[ index ].state = data.state
+
+		this.sources[ index ].requested = false
 	}
 
 	private handleBuffer( data: Message )
@@ -157,6 +168,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 			buffer: data.buffer,
 			id: data.bufferID
 		}
+
+		this.sources[ index ].requested = false
 	}
 
 	private bufferKey( index: number )
@@ -169,12 +182,12 @@ class PlayerWorklet extends AudioWorkletProcessor
 	}
 
 	// Clean up tasks
-	private onEndProcess( idList: IDMessageItem[] )
+	private onEndProcess()
 	{
-		if ( idList.length > 0 )
-			this.port.postMessage( this.emitBufferIDs( idList ) )
+		if ( this.playingBuffer.length > 0 )
+			this.port.postMessage( this.emitBufferIDs( this.playingBuffer ) )
 
-		const requestBuffer: string[] = []
+		this.requestBuffer.length = 0
 
 		for ( let i = 0; i < this.sources.length; i += 1 ) 
 		{
@@ -185,13 +198,18 @@ class PlayerWorklet extends AudioWorkletProcessor
 				this.sources[ i ] = this.newStreamItem( this.sources[ i ].id )
 			}
 
-			if ( this.sources[ i ].state && ( this.sources[ i ].totalBuffers - this.sources[ i ].currentBuffer ) < 6 )
+			if ( 
+				this.sources[ i ].state
+				&& !this.sources[ i ].requested 
+				&& ( this.sources[ i ].totalBuffers - this.sources[ i ].currentBuffer ) < 6 )
 			{
-				requestBuffer.push( this.sources[ i ].id )
+				this.sources[ i ].requested = true
+
+				this.requestBuffer.push( this.sources[ i ].id )
 			}
 		}
 
-		this.port.postMessage( this.emitFeedRequest( requestBuffer ) )
+		this.port.postMessage( this.emitFeedRequest( this.requestBuffer ) )
 	}
 
 	private emitBufferIDs( idList: IDMessageItem[] ): IDMessage
@@ -219,8 +237,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 	{
 		try
 		{
-			const playingBuffer: IDMessageItem[] = []
-			
+			this.playingBuffer.length = 0
+
 			for ( let s = 0; s < this.sources.length; s += 1 )
 			{		
 				const source = this.sources[ s ]
@@ -254,7 +272,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 					if ( source.bufferState === BufferState.new )
 					{
-						playingBuffer.push( {
+						this.playingBuffer.push( {
 							bufferID: source[ source.currentBuffer ].id,
 							sourceID: source.id
 						} )
@@ -294,7 +312,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 				}
 			}
 
-			this.onEndProcess( playingBuffer )
+			this.onEndProcess()
 		}
 		catch ( e )
 		{

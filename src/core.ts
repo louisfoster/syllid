@@ -1,14 +1,15 @@
-import { LiveStream, LiveStreamHandler, LiveStreamProvider } from "./liveStream"
+import { LiveStream } from "./liveStream"
 import { Player, PlayerHandler } from "./player"
 import { RandomStream } from "./randomStream"
+import type { StreamHandler, StreamProvider } from "./streamCore"
 import type { SyllidContextInterface } from "./syllid"
 import { WorkerPool } from "./workerPool"
 
 export class Core
 implements
 	PlayerHandler,
-	LiveStreamHandler,
-	LiveStreamProvider
+	StreamHandler,
+	StreamProvider
 {
 	public validatePlaylistResponse: ( items: Playlist ) => Playlist
 
@@ -259,7 +260,7 @@ implements
 
 		this.init()
 
-		this.streams[ id ] = new RandomStream( id, endpoint, 10, this, this )
+		this.streams[ id ] = new RandomStream( id, endpoint, 10, this, this, this )
 	}
 
 	public handleSegment( streamID: string, data: Float32Array, segmentID: string ): void

@@ -1,7 +1,7 @@
-import { LiveStreamHandler, LiveStreamProvider } from "./liveStream";
 import { PlayerHandler } from "./player";
+import type { StreamHandler, StreamProvider } from "./streamCore";
 import type { SyllidContextInterface } from "./syllid";
-export declare class Core implements PlayerHandler, LiveStreamHandler, LiveStreamProvider {
+export declare class Core implements PlayerHandler, StreamHandler, StreamProvider {
     private context;
     validatePlaylistResponse: (items: Playlist) => Playlist;
     private streams;

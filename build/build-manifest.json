@@ -4,11 +4,20 @@
       "bytes": 2216,
       "imports": []
     },
-    "liveStream.js": {
-      "bytes": 4728,
+    "streamCore.js": {
+      "bytes": 4311,
       "imports": [
         {
           "path": "web_modules/circular_buffer_js.js",
+          "kind": "import-statement"
+        }
+      ]
+    },
+    "liveStream.js": {
+      "bytes": 1319,
+      "imports": [
+        {
+          "path": "streamCore.js",
           "kind": "import-statement"
         }
       ]
@@ -18,7 +27,7 @@
       "imports": []
     },
     "playerWorklet.js": {
-      "bytes": 3125,
+      "bytes": 3420,
       "imports": []
     },
     "web_modules/audioworklet-polyfill.js": {
@@ -43,10 +52,10 @@
       ]
     },
     "randomStream.js": {
-      "bytes": 5331,
+      "bytes": 2051,
       "imports": [
         {
-          "path": "web_modules/circular_buffer_js.js",
+          "path": "streamCore.js",
           "kind": "import-statement"
         }
       ]
@@ -69,7 +78,7 @@
       ]
     },
     "core.js": {
-      "bytes": 4584,
+      "bytes": 4590,
       "imports": [
         {
           "path": "liveStream.js",
@@ -110,14 +119,17 @@
         "web_modules/circular_buffer_js.js": {
           "bytesInOutput": 1969
         },
+        "streamCore.js": {
+          "bytesInOutput": 2643
+        },
         "liveStream.js": {
-          "bytesInOutput": 2956
+          "bytesInOutput": 928
         },
         "__snowpack__/env.js": {
           "bytesInOutput": 55
         },
         "playerWorklet.js": {
-          "bytesInOutput": 3096
+          "bytesInOutput": 3391
         },
         "web_modules/audioworklet-polyfill.js": {
           "bytesInOutput": 2254
@@ -126,7 +138,7 @@
           "bytesInOutput": 4426
         },
         "randomStream.js": {
-          "bytesInOutput": 3340
+          "bytesInOutput": 1437
         },
         "modules/opus-recorder/dist/decoder/decoderWorker.min.js": {
           "bytesInOutput": 205150
@@ -135,13 +147,13 @@
           "bytesInOutput": 2673
         },
         "core.js": {
-          "bytesInOutput": 3057
+          "bytesInOutput": 3062
         },
         "syllid.js": {
           "bytesInOutput": 444
         }
       },
-      "bytes": 229441
+      "bytes": 228453
     }
   }
 }
