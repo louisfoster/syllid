@@ -55,7 +55,14 @@ export class StreamCore implements Stream
 	// Times checked for URLs without update
 	private noUpdateCount: number
 
+	// Active state
 	private state: State
+
+	// Get more segments
+	private continueFetch: boolean
+
+	// Segment feed size
+	private feedSize: number
 
 	constructor(
 		private id: string,
@@ -83,6 +90,10 @@ export class StreamCore implements Stream
 		this.checkInterval = 0
 
 		this.state = State.stopped
+
+		this.continueFetch = false
+
+		this.feedSize = 5
 	}
 
 	private bindFns()
@@ -207,6 +218,13 @@ export class StreamCore implements Stream
 		}
 
 		this.updateLock = false
+
+		if ( this.continueFetch )
+		{
+			this.nextSegments()
+
+			this.continueFetch = false
+		}
 	}
 
 	/**
@@ -277,14 +295,19 @@ export class StreamCore implements Stream
 
 	public nextSegments(): void
 	{
-		if ( this.nextLock ) return
+		if ( this.nextLock )
+		{
+			this.continueFetch = true
+
+			return
+		}
 
 		this.nextLock = true
 
 		// Maximum segments to load is 10
 		// This is also the limit of segments returned
 		// When requesting latest audio
-		const count = Math.min( 5, this.segments.length )
+		const count = Math.min( this.feedSize, this.segments.length )
 
 		for ( let i = 0; i < count; i += 1 )
 		{
@@ -296,8 +319,8 @@ export class StreamCore implements Stream
 		}
 
 		this.nextLock = false
-		
-		if ( count !== 0 ) this.updateBuffer()
+
+		this.updateBuffer()
 	}
 
 	public start(): void

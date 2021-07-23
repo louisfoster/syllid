@@ -26,6 +26,8 @@ export declare class StreamCore implements Stream {
     private checkInterval;
     private noUpdateCount;
     private state;
+    private continueFetch;
+    private feedSize;
     constructor(id: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, path: PathProvider);
     private bindFns;
     /**
