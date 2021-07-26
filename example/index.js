@@ -3,6 +3,7 @@ var StreamType;
 (function (StreamType) {
     StreamType["live"] = "live";
     StreamType["random"] = "random";
+    StreamType["normal"] = "normal";
 })(StreamType || (StreamType = {}));
 class App {
     syllid;
@@ -10,6 +11,7 @@ class App {
     startBtn;
     ui;
     input;
+    positions;
     constructor() {
         this.load = this.load.bind(this);
         this.start = this.start.bind(this);
@@ -19,6 +21,7 @@ class App {
         this.startBtn.addEventListener(`click`, this.load);
         this.ui = {};
         this.input = document.createElement(`input`);
+        this.positions = {};
     }
     existsOrThrow(item, selector) {
         if (!item) {
@@ -54,9 +57,15 @@ class App {
                 break;
             case StreamType.random:
                 this.syllid.addRandomStream(id, url);
+                break;
+            case StreamType.normal:
+                this.syllid.addNormalStream(id, url);
+                this.positions[id] = {};
         }
         const container = document.createElement(`div`);
-        this.ui[id] = new UI(id, container, this.syllid);
+        this.ui[id] = new UI(id, container, this.syllid, type === StreamType.normal
+            ? position => this.syllid?.setPosition(id, position)
+            : undefined);
         this.el.appendChild(container);
     }
     getID() {
@@ -85,7 +94,7 @@ class App {
     }
     onPlayingSegments(idList) {
         for (const { sourceID, bufferID } of idList) {
-            this.ui[sourceID].setSegmentPlaying(bufferID);
+            this.ui[sourceID].setSegmentPlaying(bufferID, this.positions[sourceID]?.[bufferID]);
         }
     }
     onPlaying(id) {
@@ -102,6 +111,14 @@ class App {
     }
     onNoData(id) {
         this.ui[id].setNoData();
+    }
+    onLengthUpdate(id, length) {
+        this.ui[id].setRangeLength(length);
+    }
+    onSegmentPositions(streamID, positions) {
+        for (const { id, position } of positions) {
+            this.positions[streamID][id] = position;
+        }
     }
 }
 App.init();

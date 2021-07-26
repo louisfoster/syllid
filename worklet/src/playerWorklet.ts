@@ -24,7 +24,8 @@ enum MessageType
 {
 	state = `state`,
 	buffer = `buffer`,
-	add = `add`
+	add = `add`,
+	reset = `reset`
 }
 
 enum EmitType
@@ -70,7 +71,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.handlers = {
 			[ MessageType.state ]: this.handleState,
 			[ MessageType.buffer ]: this.handleBuffer,
-			[ MessageType.add ]: this.handleAdd
+			[ MessageType.add ]: this.handleAdd,
+			[ MessageType.reset ]: this.handleReset
 		}
 	}
 
@@ -83,6 +85,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.handleBuffer = this.handleBuffer.bind( this )
 
 		this.handleAdd = this.handleAdd.bind( this )
+
+		this.handleReset = this.handleReset.bind( this )
 
 		this.bufferKey = this.bufferKey.bind( this )
 
@@ -179,6 +183,26 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.sources[ index ].totalBuffers += 1
 
 		return number
+	}
+
+	private handleReset( data: Message )
+	{
+		// Wrong type
+		if ( data.type !== MessageType.reset ) return
+
+		// Invalid data
+		if ( typeof data.id !== `string` ) return
+		
+		// No relevant stream
+		const index = this.sourceKey[ data.id ]
+
+		if ( index === undefined ) return
+
+		const state = this.sources[ index ].state
+
+		this.sources[ index ] = this.newStreamItem( data.id )
+
+		this.sources[ index ].state = state
 	}
 
 	// Clean up tasks

@@ -3,6 +3,8 @@ export interface StreamHandler {
     onWarning: (message: string) => void;
     onFailure: (message: string) => void;
     noData: (id: string) => void;
+    onStreamStart: (id: string) => void;
+    onStreamStop: (id: string) => void;
 }
 export interface StreamProvider {
     validatePlaylistResponse: (items: Playlist) => Playlist;
@@ -12,23 +14,25 @@ export interface PathProvider {
     path: () => string;
 }
 export declare class StreamCore implements Stream {
+    type: `live` | `normal` | `random`;
     private id;
     private bufferSize;
     private handler;
     private provider;
     private path;
+    private onFileListUpdated?;
     private segments;
     private updateLock;
     private nextLock;
-    fileList: string[];
-    idList: string[];
     private refCursor;
-    private checkInterval;
+    private checkTimeout;
     private noUpdateCount;
     private state;
     private continueFetch;
     private feedSize;
-    constructor(id: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, path: PathProvider);
+    fileList: string[];
+    idList: string[];
+    constructor(type: `live` | `normal` | `random`, id: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, path: PathProvider, onFileListUpdated?: (() => void) | undefined);
     private bindFns;
     /**
      * Check if new segments are available
@@ -60,5 +64,6 @@ export declare class StreamCore implements Stream {
     nextSegments(): void;
     start(): void;
     stop(): void;
+    reset(onComplete: (fn: () => void) => void): void;
 }
 //# sourceMappingURL=streamCore.d.ts.map

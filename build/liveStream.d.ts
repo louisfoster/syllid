@@ -6,6 +6,7 @@ export declare class LiveStream implements Stream, PathProvider {
     private handler;
     private provider;
     private core;
+    type: `live`;
     constructor(id: string, endpoint: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider);
     private bindFns;
     private endpointWithQuery;

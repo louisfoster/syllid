@@ -65,10 +65,17 @@ interface AddMessage
 	index: number
 }
 
+interface ResetMessage
+{
+	type: `reset`
+	id: string
+}
+
 type Message =
 	| StateMessage
 	| BufferMessage
 	| AddMessage
+	| ResetMessage
 
 interface FeedMessage
 {
@@ -109,7 +116,14 @@ interface Segment
 
 interface Stream
 {
+	type: `live` | `normal` | `random`
 	nextSegments(): void
 	start(): void
 	stop(): void
+}
+
+interface Position
+{
+	id: string
+	position: number
 }

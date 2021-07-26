@@ -4,6 +4,8 @@ export class LiveStream implements Stream, PathProvider
 {
 	private core: StreamCore
 
+	public type: `live`
+
 	constructor(
 		private id: string,
 		private endpoint: string,
@@ -13,16 +15,19 @@ export class LiveStream implements Stream, PathProvider
 	{
 		this.bindFns()
 
+		this.type = `live`
+
 		this.endpoint = this.addSlash( this.endpoint )
 
 		this.core = new StreamCore(
+			this.type,
 			this.id,
 			this.bufferSize,
 			this.handler,
 			this.provider,
 			this )
 
-		this.start()
+		// this.start()
 	}
 
 	private bindFns()

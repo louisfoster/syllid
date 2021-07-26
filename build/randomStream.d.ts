@@ -13,6 +13,7 @@ export declare class RandomStream implements Stream, PathProvider {
     location: string;
     freshLocation: boolean;
     count: number;
+    type: `random`;
     constructor(id: string, endpoint: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, random: RandomStreamProvider);
     private bindFns;
     private setFreshLocation;

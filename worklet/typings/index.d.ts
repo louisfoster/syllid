@@ -46,10 +46,17 @@ interface AddMessage
 	index: number
 }
 
+interface ResetMessage
+{
+	type: `reset`
+	id: string
+}
+
 type Message =
 	| StateMessage
 	| BufferMessage
 	| AddMessage
+	| ResetMessage
 
 interface FeedMessage
 {

@@ -15,6 +15,8 @@ export class RandomStream implements Stream, PathProvider
 
 	public count: number
 
+	public type: `random`
+
 	constructor(
 		private id: string,
 		private endpoint: string,
@@ -25,6 +27,8 @@ export class RandomStream implements Stream, PathProvider
 	{
 		this.bindFns()
 
+		this.type = `random`
+
 		this.count = 0
 
 		this.location = ``
@@ -34,13 +38,25 @@ export class RandomStream implements Stream, PathProvider
 		this.endpoint = this.addSlash( this.endpoint )
 
 		this.core = new StreamCore(
+			this.type,
 			this.id,
 			this.bufferSize,
 			this.handler,
-			this.provider,
+			{
+				decodeSegment: this.provider.decodeSegment,
+				validatePlaylistResponse: response =>
+				{
+					const items = this.provider.validatePlaylistResponse( response )
+
+					// amount of items returned is randomised
+					return ( items.length > 1 )
+						? items.slice( 0, Math.round( Math.random() * ( items.length - 1 ) + 1 ) )
+						: items
+				}
+			},
 			this )
 
-		this.start()
+		// this.start()
 	}
 
 	private bindFns()

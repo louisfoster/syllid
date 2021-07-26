@@ -59,9 +59,18 @@ const data = [
 	}
 ]
 
+// Use this to store numbers that are being tested for normal
+// playback, note these numbers can't be tested with
+// other forms
+const normalID = {}
+
 const fromID = (i, id) =>
 {
 	const index = data[i].mapped[id]
+
+	const isEnd = (index === data[i].ids.length - 1)
+
+	if (isEnd && normalID[i]) return []
 
 	return (index === data[i].ids.length - 1) 
 		? data[i].urls.slice(0, 5)
@@ -78,6 +87,15 @@ app.use('/audio', express.static('example/audio'))
 
 app.get('/decoderWorker.min.wasm', (req, res) => res.redirect(`/build/decoderWorker.min.wasm`))
 
+app.get('/playlist/:num/length', (req, res) =>
+{
+	const num = parseInt(req.params.num)
+
+	normalID[num] = true
+
+	res.json({length: data[num].urls.length})
+})
+
 app.get('/playlist/:num/:id', (req, res) =>
 {
 	res.json(fromID(parseInt(req.params.num), req.params.id))
@@ -91,6 +109,12 @@ app.get('/playlist/:num', (req, res) =>
 		res.json(fromID(num, data[num].ids[Math.floor(Math.random() * data[num].ids.length)]))
 	else if (req.query.start === `latest`)
 		res.json(data[num].urls.slice(data[num].urls.length - 5))
+	else if (req.query.start === `position`)
+	{
+		const pos = parseInt(req.query.position)
+
+		res.json(data[num].urls.slice(pos, pos + 10))
+	}
 	else res.json(data[num].urls)
 })
 

@@ -46,6 +46,7 @@ export declare class Player {
     private bufferMessage;
     private stateMessage;
     private addMessage;
+    private resetMessage;
     init(): Promise<void>;
     private handleWorkletMessage;
     private addSource;
@@ -57,5 +58,6 @@ export declare class Player {
     stopSourceChannel(sourceID: string, channel: number, onActive?: () => void): void;
     sampleRate(): number;
     stop(): void;
+    resetSourcePlayback(id: string): void;
 }
 //# sourceMappingURL=player.d.ts.map

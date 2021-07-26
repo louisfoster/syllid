@@ -1,10 +1,11 @@
-import type { IDMessageItem, Syllid, SyllidContextInterface } from "../build/syllid.js"
+import type { IDMessageItem, Position, Syllid, SyllidContextInterface } from "../build/syllid.js"
 import { UI } from "./ui.js"
 
 enum StreamType
 {
 	live = `live`,
-	random = `random`
+	random = `random`,
+	normal = `normal`
 }
 
 class App implements SyllidContextInterface
@@ -18,6 +19,8 @@ class App implements SyllidContextInterface
 	private ui: Record<string, UI>
 
 	private input: HTMLInputElement
+
+	private positions: Record<string, Record<string, number>>
 
 	constructor()
 	{
@@ -37,6 +40,7 @@ class App implements SyllidContextInterface
 
 		this.input = document.createElement( `input` )
 
+		this.positions = {}
 	}
 
 	private existsOrThrow<T>( item: unknown, selector: string )
@@ -94,11 +98,24 @@ class App implements SyllidContextInterface
 
 			case StreamType.random:
 				this.syllid.addRandomStream( id, url )
+
+				break
+
+			case StreamType.normal:
+				this.syllid.addNormalStream( id, url )
+
+				this.positions[ id ] = {}
 		}
 
 		const container = document.createElement( `div` )
 
-		this.ui[ id ] = new UI( id,  container, this.syllid )
+		this.ui[ id ] = new UI(
+			id,
+			container,
+			this.syllid,
+			type === StreamType.normal
+				? position => this.syllid?.setPosition( id, position )
+				: undefined )
 
 		this.el.appendChild( container )
 	}
@@ -146,7 +163,7 @@ class App implements SyllidContextInterface
 	{
 		for ( const { sourceID, bufferID } of idList )
 		{
-			this.ui[ sourceID ].setSegmentPlaying( bufferID )
+			this.ui[ sourceID ].setSegmentPlaying( bufferID, this.positions[ sourceID ]?.[ bufferID ] )
 		}
 	}
 
@@ -173,6 +190,19 @@ class App implements SyllidContextInterface
 	public onNoData( id: string ): void
 	{
 		this.ui[ id ].setNoData()
+	}
+
+	public onLengthUpdate( id: string, length: number ): void
+	{
+		this.ui[ id ].setRangeLength( length )
+	}
+
+	public onSegmentPositions( streamID: string, positions: Position[] ): void
+	{
+		for( const { id, position } of positions )
+		{
+			this.positions[ streamID ][ id ] = position
+		}
 	}
 }
 

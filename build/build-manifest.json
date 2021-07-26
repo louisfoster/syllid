@@ -5,7 +5,7 @@
       "imports": []
     },
     "streamCore.js": {
-      "bytes": 4493,
+      "bytes": 5085,
       "imports": [
         {
           "path": "web_modules/circular_buffer_js.js",
@@ -14,7 +14,16 @@
       ]
     },
     "liveStream.js": {
-      "bytes": 1319,
+      "bytes": 1336,
+      "imports": [
+        {
+          "path": "streamCore.js",
+          "kind": "import-statement"
+        }
+      ]
+    },
+    "normalStream.js": {
+      "bytes": 4383,
       "imports": [
         {
           "path": "streamCore.js",
@@ -27,7 +36,7 @@
       "imports": []
     },
     "playerWorklet.js": {
-      "bytes": 3551,
+      "bytes": 3845,
       "imports": []
     },
     "web_modules/audioworklet-polyfill.js": {
@@ -35,7 +44,7 @@
       "imports": []
     },
     "player.js": {
-      "bytes": 7171,
+      "bytes": 7382,
       "imports": [
         {
           "path": "__snowpack__/env.js",
@@ -52,7 +61,7 @@
       ]
     },
     "randomStream.js": {
-      "bytes": 2051,
+      "bytes": 2352,
       "imports": [
         {
           "path": "streamCore.js",
@@ -78,10 +87,14 @@
       ]
     },
     "core.js": {
-      "bytes": 4590,
+      "bytes": 5489,
       "imports": [
         {
           "path": "liveStream.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "normalStream.js",
           "kind": "import-statement"
         },
         {
@@ -99,7 +112,7 @@
       ]
     },
     "syllid.js": {
-      "bytes": 597,
+      "bytes": 1111,
       "imports": [
         {
           "path": "core.js",
@@ -120,25 +133,28 @@
           "bytesInOutput": 1969
         },
         "streamCore.js": {
-          "bytesInOutput": 2773
+          "bytesInOutput": 3128
         },
         "liveStream.js": {
-          "bytesInOutput": 928
+          "bytesInOutput": 942
+        },
+        "normalStream.js": {
+          "bytesInOutput": 3056
         },
         "__snowpack__/env.js": {
           "bytesInOutput": 55
         },
         "playerWorklet.js": {
-          "bytesInOutput": 3522
+          "bytesInOutput": 3816
         },
         "web_modules/audioworklet-polyfill.js": {
           "bytesInOutput": 2254
         },
         "player.js": {
-          "bytesInOutput": 4426
+          "bytesInOutput": 4560
         },
         "randomStream.js": {
-          "bytesInOutput": 1437
+          "bytesInOutput": 1633
         },
         "modules/opus-recorder/dist/decoder/decoderWorker.min.js": {
           "bytesInOutput": 205150
@@ -147,13 +163,13 @@
           "bytesInOutput": 2673
         },
         "core.js": {
-          "bytesInOutput": 3062
+          "bytesInOutput": 3633
         },
         "syllid.js": {
-          "bytesInOutput": 444
+          "bytesInOutput": 687
         }
       },
-      "bytes": 228714
+      "bytes": 233577
     }
   }
 }

@@ -1,7 +1,8 @@
+import { NormalStreamHandler } from "./normalStream";
 import { PlayerHandler } from "./player";
 import type { StreamHandler, StreamProvider } from "./streamCore";
 import type { SyllidContextInterface } from "./syllid";
-export declare class Core implements PlayerHandler, StreamHandler, StreamProvider {
+export declare class Core implements PlayerHandler, StreamHandler, StreamProvider, NormalStreamHandler {
     private context;
     validatePlaylistResponse: (items: Playlist) => Playlist;
     private streams;
@@ -17,6 +18,7 @@ export declare class Core implements PlayerHandler, StreamHandler, StreamProvide
     getChannels(): number;
     randomInt(from: number, to: number): number;
     private validatePlaylist;
+    private isNormalStream;
     bufferSource(id: string): void;
     onPlayingBuffers(idList: IDMessageItem[]): void;
     onStartSource(id: string): void;
@@ -28,6 +30,8 @@ export declare class Core implements PlayerHandler, StreamHandler, StreamProvide
     init(): Promise<void>;
     startStream(id: string): void;
     stopStream(id: string): void;
+    onStreamStart(id: string): void;
+    onStreamStop(id: string): void;
     startStreamChannel(streamID: string, channelIndex: number): void;
     stopStreamChannel(streamID: string, channelIndex: number): void;
     stop(): this;
@@ -35,7 +39,12 @@ export declare class Core implements PlayerHandler, StreamHandler, StreamProvide
     onFailure(error: string | Error | ErrorEvent): void;
     addLiveStream(id: string, endpoint: string): void;
     addRandomStream(id: string, endpoint: string): void;
+    addNormalStream(id: string, endpoint: string): void;
     handleSegment(streamID: string, data: Float32Array, segmentID: string): void;
     noData(id: string): void;
+    onLengthUpdate(id: string, length: number): void;
+    onResetPlayback(id: string): void;
+    setPosition(id: string, position: number): void;
+    onSegmentPositions(id: string, positions: Position[]): void;
 }
 //# sourceMappingURL=core.d.ts.map

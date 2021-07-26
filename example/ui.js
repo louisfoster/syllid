@@ -1,12 +1,19 @@
 export class UI {
     id;
     syllid;
+    onPositionChange;
     el;
     ui;
-    constructor(id, mount, syllid) {
+    scrubLen;
+    isNormal;
+    scrubPos;
+    constructor(id, mount, syllid, onPositionChange) {
         this.id = id;
         this.syllid = syllid;
+        this.onPositionChange = onPositionChange;
         this.bindFns();
+        this.scrubLen = 0;
+        this.scrubPos = 0;
         this.el = document.createElement(`div`);
         mount.appendChild(this.el);
         const playing = document.createElement(`div`);
@@ -15,11 +22,15 @@ export class UI {
         this.ui = {
             playBtn: this.playBtn(),
             channelBtns: [],
-            playing
+            playing,
+            scrubber: document.createElement(`div`)
         };
         for (let c = 0; c < this.syllid.getChannels(); c++) {
             this.ui.channelBtns[c] = this.btn(c);
         }
+        this.isNormal = this.onPositionChange !== undefined;
+        if (this.isNormal)
+            this.scrubber();
     }
     bindFns() {
         this.disableBtn = this.disableBtn.bind(this);
@@ -31,6 +42,8 @@ export class UI {
         this.setUnmute = this.setUnmute.bind(this);
         this.setMute = this.setMute.bind(this);
         this.setNoData = this.setNoData.bind(this);
+        this.updateScrub = this.updateScrub.bind(this);
+        this.emitPosition = this.emitPosition.bind(this);
     }
     disableBtn(btn) {
         btn.textContent = `Loading`;
@@ -84,8 +97,59 @@ export class UI {
             this.syllid.stopStream(this.id);
         }
     }
-    setSegmentPlaying(bufferID) {
-        this.ui.playing.textContent = `Playing: ${bufferID}`;
+    scrubber() {
+        const range = document.createElement(`input`);
+        range.type = `range`;
+        range.min = `0`;
+        range.max = `${this.scrubLen}`;
+        range.step = `1`;
+        this.ui.scrubber.appendChild(range);
+        range.addEventListener(`input`, () => this.updateScrub());
+        range.addEventListener(`change`, () => this.emitPosition());
+        const time = document.createElement(`div`);
+        const now = document.createElement(`span`);
+        now.textContent = this.lengthToTime(this.scrubPos);
+        const total = document.createElement(`span`);
+        total.textContent = ` / ${this.lengthToTime(this.scrubLen)}`;
+        time.appendChild(now);
+        time.appendChild(total);
+        this.ui.scrubber.appendChild(time);
+        this.el.appendChild(this.ui.scrubber);
+    }
+    updateScrub() {
+        const time = this.ui.scrubber.querySelector(`div > span:first-child`);
+        const scrub = this.ui.scrubber.querySelector(`input`);
+        if (time && scrub) {
+            this.scrubPos = parseInt(scrub.value) ?? 0;
+            console.log(`update`, this.scrubPos);
+            time.textContent = this.lengthToTime(this.scrubPos);
+        }
+    }
+    emitPosition() {
+        console.log(`emit`, this.scrubPos);
+        this.onPositionChange?.(this.scrubPos);
+    }
+    lengthToTime(time) {
+        const hour = time * (1 / 3600);
+        const min = (hour % 1) * 60;
+        const sec = (min % 1) * 60;
+        return `${this.toInterval(hour)}:${this.toInterval(min)}:${this.toInterval(sec)}`;
+    }
+    toInterval(value) {
+        return `${`${Math.round(value)}`.padStart(2, `0`)}`;
+    }
+    setSegmentPlaying(segmentID, position) {
+        this.ui.playing.textContent = `Playing: ${segmentID}`;
+        if (position && this.isNormal) {
+            // NOTE: updates might need to pause if scrubbing
+            this.scrubPos = position;
+            const time = this.ui.scrubber.querySelector(`div > span:first-child`);
+            if (time)
+                time.textContent = this.lengthToTime(position);
+            const scrub = this.ui.scrubber.querySelector(`input`);
+            if (scrub)
+                scrub.value = `${this.scrubPos}`;
+        }
     }
     setPlaying() {
         this.ui.playBtn.disabled = false;
@@ -109,5 +173,16 @@ export class UI {
     }
     setNoData() {
         this.ui.playing.textContent = `No data`;
+    }
+    setRangeLength(length) {
+        if (!this.isNormal)
+            return;
+        this.scrubLen = length;
+        const scrub = this.ui.scrubber.querySelector(`input`);
+        if (scrub)
+            scrub.max = `${this.scrubLen}`;
+        const time = this.ui.scrubber.querySelector(`div > span:last-child`);
+        if (time)
+            time.textContent = ` / ${this.lengthToTime(this.scrubLen)}`;
     }
 }

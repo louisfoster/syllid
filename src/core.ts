@@ -1,4 +1,5 @@
 import { LiveStream } from "./liveStream"
+import { NormalStream, NormalStreamHandler } from "./normalStream"
 import { Player, PlayerHandler } from "./player"
 import { RandomStream } from "./randomStream"
 import type { StreamHandler, StreamProvider } from "./streamCore"
@@ -9,7 +10,8 @@ export class Core
 implements
 	PlayerHandler,
 	StreamHandler,
-	StreamProvider
+	StreamProvider,
+	NormalStreamHandler
 {
 	public validatePlaylistResponse: ( items: Playlist ) => Playlist
 
@@ -68,6 +70,10 @@ implements
 
 		this.onStopSource = this.onStopSource.bind( this )
 
+		this.onStreamStart = this.onStreamStart.bind( this )
+
+		this.onStreamStop = this.onStreamStop.bind( this )
+
 		this.onStartSourceChannel = this.onStartSourceChannel.bind( this )
 
 		this.onStopSourceChannel = this.onStopSourceChannel.bind( this )
@@ -83,6 +89,10 @@ implements
 		this.noData = this.noData.bind( this )
 
 		this.randomInt = this.randomInt.bind( this )
+
+		this.onLengthUpdate = this.onLengthUpdate.bind( this )
+
+		this.onResetPlayback = this.onResetPlayback.bind( this )
 	}
 
 	public getChannels(): number
@@ -122,6 +132,11 @@ implements
 		} )
 
 		return items
+	}
+
+	private isNormalStream( stream: Stream ): stream is NormalStream
+	{
+		return stream.type === `normal`
 	}
 
 	public bufferSource( id: string ): void
@@ -198,14 +213,20 @@ implements
 		this.init()
 
 		this.streams[ id ]?.start()
-
-		this.player.startSource( id )
 	}
 	
 	public stopStream( id: string ): void
 	{
 		this.streams[ id ]?.stop()
+	}
 
+	public onStreamStart( id: string ): void
+	{
+		this.player.startSource( id )
+	}
+
+	public onStreamStop( id: string ): void
+	{
 		this.player.stopSource( id )
 	}
 
@@ -263,6 +284,15 @@ implements
 		this.streams[ id ] = new RandomStream( id, endpoint, 10, this, this, this )
 	}
 
+	public addNormalStream( id: string, endpoint: string ): void
+	{
+		if ( this.streams[ id ] ) return
+
+		this.init()
+
+		this.streams[ id ] = new NormalStream( id, endpoint, 10, this, this, this )
+	}
+
 	public handleSegment( streamID: string, data: Float32Array, segmentID: string ): void
 	{
 		this.player.feed( streamID, segmentID, data )
@@ -272,8 +302,33 @@ implements
 	{
 		// emit no data to context
 		// possibly stop player/ output
-		this.player.stopSource( id )
+		// this.player.stopSource( id )
 
-		this.context.onNoData( id )
+		// this.context.onNoData( id )
+	}
+
+	public onLengthUpdate( id: string, length: number ): void
+	{
+		this.context.onLengthUpdate( id, length )
+	}
+
+	public onResetPlayback( id: string ): void
+	{
+		this.player.resetSourcePlayback( id )
+	}
+
+	public setPosition( id: string, position: number ): void
+	{
+		const stream = this.streams[ id ]
+
+		if ( this.isNormalStream( stream ) )
+		{
+			stream.setPosition( position )
+		}
+	}
+
+	public onSegmentPositions( id: string, positions: Position[] ): void
+	{
+		this.context.onSegmentPositions( id, positions )
 	}
 }

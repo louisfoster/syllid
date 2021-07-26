@@ -7,12 +7,27 @@ export class UI
 	private ui: {
 		playBtn: HTMLButtonElement
 		channelBtns: HTMLButtonElement[]
-		playing: HTMLDivElement
+		playing: HTMLDivElement,
+		scrubber: HTMLDivElement
 	}
 
-	constructor( private id: string, mount: HTMLElement, private syllid: Syllid )
+	private scrubLen: number
+
+	private isNormal: boolean
+
+	private scrubPos: number
+
+	constructor(
+		private id: string,
+		mount: HTMLElement,
+		private syllid: Syllid,
+		private onPositionChange?: ( position: number ) => void )
 	{
 		this.bindFns()
+
+		this.scrubLen = 0
+
+		this.scrubPos = 0
 
 		this.el = document.createElement( `div` )
 
@@ -27,13 +42,18 @@ export class UI
 		this.ui = {
 			playBtn: this.playBtn(),
 			channelBtns: [],
-			playing
+			playing,
+			scrubber: document.createElement( `div` )
 		}
 
 		for ( let c = 0; c < this.syllid.getChannels(); c++ )
 		{
 			this.ui.channelBtns[ c ] = this.btn( c )
 		}
+
+		this.isNormal = this.onPositionChange !== undefined
+
+		if ( this.isNormal ) this.scrubber()
 	}
 
 	private bindFns()
@@ -55,6 +75,10 @@ export class UI
 		this.setMute = this.setMute.bind( this )
 
 		this.setNoData = this.setNoData.bind( this )
+
+		this.updateScrub = this.updateScrub.bind( this )
+
+		this.emitPosition = this.emitPosition.bind( this )
 	}
 
 	private disableBtn( btn: HTMLButtonElement )
@@ -146,9 +170,100 @@ export class UI
 		}
 	}
 
-	public setSegmentPlaying( bufferID: string ): void
+	private scrubber()
 	{
-		this.ui.playing.textContent = `Playing: ${bufferID}`
+		const range = document.createElement( `input` )
+
+		range.type = `range`
+
+		range.min = `0`
+
+		range.max = `${this.scrubLen}`
+
+		range.step = `1`
+
+		this.ui.scrubber.appendChild( range )
+
+		range.addEventListener( `input`, () => this.updateScrub() )
+
+		range.addEventListener( `change`, () => this.emitPosition() )
+
+		const time = document.createElement( `div` )
+
+		const now = document.createElement( `span` )
+
+		now.textContent = this.lengthToTime( this.scrubPos )
+
+		const total = document.createElement( `span` )
+
+		total.textContent = ` / ${this.lengthToTime( this.scrubLen )}`
+
+		time.appendChild( now )
+
+		time.appendChild( total )
+
+		this.ui.scrubber.appendChild( time )
+
+		this.el.appendChild( this.ui.scrubber )
+	}
+
+	private updateScrub()
+	{
+		const time = this.ui.scrubber.querySelector( `div > span:first-child` )
+
+		const scrub = this.ui.scrubber.querySelector( `input` )
+
+		if ( time && scrub )
+		{
+			this.scrubPos = parseInt( scrub.value ) ?? 0
+
+			console.log( `update`, this.scrubPos )
+
+			time.textContent = this.lengthToTime( this.scrubPos )
+		}
+	}
+
+	private emitPosition()
+	{
+		console.log( `emit`, this.scrubPos )
+
+		this.onPositionChange?.( this.scrubPos )
+	}
+
+	private lengthToTime( time: number )
+	{
+		const hour = time * ( 1 / 3600 )
+
+		const min = ( hour % 1 ) * 60
+
+		const sec =  ( min % 1 ) * 60
+
+		return `${this.toInterval( hour )}:${this.toInterval( min )}:${this.toInterval( sec )}`
+	}
+
+	private toInterval( value: number )
+	{
+		return `${`${Math.round( value )}`.padStart( 2, `0` )}`
+	}
+
+	public setSegmentPlaying( segmentID: string, position?: number ): void
+	{
+		this.ui.playing.textContent = `Playing: ${segmentID}`
+
+		if ( position && this.isNormal )
+		{
+			// NOTE: updates might need to pause if scrubbing
+
+			this.scrubPos = position
+			
+			const time = this.ui.scrubber.querySelector( `div > span:first-child` )
+
+			if ( time ) time.textContent = this.lengthToTime( position )
+
+			const scrub = this.ui.scrubber.querySelector( `input` )
+
+			if ( scrub ) scrub.value = `${this.scrubPos}`
+		}
 	}
 
 	public setPlaying(): void
@@ -190,5 +305,20 @@ export class UI
 	public setNoData(): void
 	{
 		this.ui.playing.textContent = `No data`
+	}
+
+	public setRangeLength( length: number ): void
+	{
+		if ( !this.isNormal ) return
+
+		this.scrubLen = length
+
+		const scrub = this.ui.scrubber.querySelector( `input` )
+
+		if ( scrub ) scrub.max = `${this.scrubLen}`
+
+		const time = this.ui.scrubber.querySelector( `div > span:last-child` )
+
+		if ( time ) time.textContent = ` / ${this.lengthToTime( this.scrubLen )}`
 	}
 }

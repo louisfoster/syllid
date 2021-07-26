@@ -2,6 +2,10 @@ export interface IDMessageItem {
     sourceID: string;
     bufferID: string;
 }
+export interface Position {
+    id: string;
+    position: number;
+}
 export interface SyllidContextInterface {
     onWarning: (message: string | Error | ErrorEvent) => void;
     onFailure: (error: string | Error | ErrorEvent) => void;
@@ -11,23 +15,27 @@ export interface SyllidContextInterface {
     onNoData: (id: string) => void;
     onUnmuteChannel: (streamID: string, channelIndex: number) => void;
     onMuteChannel: (streamID: string, channelIndex: number) => void;
+    onLengthUpdate: (id: string, length: number) => void;
+    onSegmentPositions: (id: string, positions: Position[]) => void;
 }
 export declare class Syllid {
     private context;
     private core;
-    getChannels: () => number;
-    init: () => Promise<void>;
-    startStream: (id: string) => void;
-    stopStream: (id: string) => void;
-    startStreamChannel: (streamID: string, channelIndex: number) => void;
-    stopStreamChannel: (streamID: string, channelIndex: number) => void;
-    addLiveStream: (id: string, endpoint: string) => void;
-    addRandomStream: (id: string, endpoint: string) => void;
     /**
      * Syllid Lib Interface
      * @param context Interface to the context importing this lib
      */
     constructor(context: SyllidContextInterface);
+    getChannels(): number;
+    init(): Promise<this>;
+    startStream(id: string): this;
+    stopStream(id: string): this;
+    startStreamChannel(streamID: string, channelIndex: number): this;
+    stopStreamChannel(streamID: string, channelIndex: number): this;
+    addLiveStream(id: string, endpoint: string): this;
+    addRandomStream(id: string, endpoint: string): this;
+    addNormalStream(id: string, endpoint: string): this;
     stop(): this;
+    setPosition(id: string, position: number): this;
 }
 //# sourceMappingURL=syllid.d.ts.map

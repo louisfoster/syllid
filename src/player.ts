@@ -22,7 +22,8 @@ enum MessageType
 {
 	state = `state`,
 	buffer = `buffer`,
-	add = `add`
+	add = `add`,
+	reset = `reset`
 }
 
 enum ChannelState
@@ -216,6 +217,14 @@ export class Player
 			id,
 			index,
 			type: MessageType.add
+		}
+	}
+
+	private resetMessage( id: string ): ResetMessage
+	{
+		return {
+			id,
+			type: MessageType.reset
 		}
 	}
 
@@ -444,5 +453,10 @@ export class Player
 	public stop(): void
 	{
 		this.ctx?.suspend()
+	}
+
+	public resetSourcePlayback( id: string ): void
+	{
+		this.worklet?.port.postMessage( this.resetMessage( id ) )
 	}
 }

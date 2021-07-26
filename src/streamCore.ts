@@ -15,6 +15,10 @@ export interface StreamHandler
 	onFailure: ( message: string ) => void
 
 	noData: ( id: string ) => void
+
+	onStreamStart: ( id: string ) => void
+
+	onStreamStop: ( id: string ) => void
 }
 
 export interface StreamProvider
@@ -40,17 +44,11 @@ export class StreamCore implements Stream
 	// Feed segments semaphore
 	private nextLock: boolean
 
-	// Segment URLs
-	public fileList: string[]
-
-	// Segment IDs
-	public idList: string[]
-
 	// Current index for fetching segments
 	private refCursor: number
 
 	// Get URLs interval
-	private checkInterval: number
+	private checkTimeout: number
 
 	// Times checked for URLs without update
 	private noUpdateCount: number
@@ -64,12 +62,20 @@ export class StreamCore implements Stream
 	// Segment feed size
 	private feedSize: number
 
+	// Segment URLs
+	public fileList: string[]
+
+	// Segment IDs
+	public idList: string[]
+
 	constructor(
+		public type: `live` | `normal` | `random`,
 		private id: string,
 		private bufferSize: number = 10,
 		private handler: StreamHandler,
 		private provider: StreamProvider,
-		private path: PathProvider )
+		private path: PathProvider,
+		private onFileListUpdated?: () => void )
 	{
 		this.bindFns()
 
@@ -87,7 +93,7 @@ export class StreamCore implements Stream
 
 		this.noUpdateCount = 0
 
-		this.checkInterval = 0
+		this.checkTimeout = 0
 
 		this.state = State.stopped
 
@@ -113,7 +119,7 @@ export class StreamCore implements Stream
 	{
 		if ( this.fileList.length - this.refCursor > this.bufferSize * 1.5 )
 		{
-			this.checkInterval = window.setTimeout(
+			this.checkTimeout = window.setTimeout(
 				() => this.checkNewSegments(),
 				this.bufferSize * 1000 )
 
@@ -122,7 +128,12 @@ export class StreamCore implements Stream
 
 		const path: string = this.path.path()
 
-		if ( !path ) return
+		if ( !path )
+		{
+			this.noUpdate()
+
+			return
+		}
 
 		// start=live query required to hint server
 		// to return the most recent segments
@@ -160,7 +171,7 @@ export class StreamCore implements Stream
 			this.noUpdateCount = 0
 		}
 
-		this.checkInterval = window.setTimeout(
+		this.checkTimeout = window.setTimeout(
 			() => this.checkNewSegments(),
 			Math.max( 0.5, playlist.length - 1 ) * 1000 )
 
@@ -170,6 +181,8 @@ export class StreamCore implements Stream
 
 			this.idList.push( segmentID )
 		}
+
+		this.onFileListUpdated?.()
 	}
 
 	private noUpdate()
@@ -184,7 +197,7 @@ export class StreamCore implements Stream
 		}
 		else
 		{
-			this.checkInterval = window.setTimeout(
+			this.checkTimeout = window.setTimeout(
 				() => this.checkNewSegments(),
 				Math.round( Math.exp( this.noUpdateCount ) * ( 100 / this.noUpdateCount ) ) )
 		}
@@ -330,6 +343,8 @@ export class StreamCore implements Stream
 		this.state = State.running
 
 		this.checkNewSegments()
+
+		this.handler.onStreamStart( this.id )
 	}
 
 	public stop(): void
@@ -338,6 +353,33 @@ export class StreamCore implements Stream
 
 		this.state = State.stopped
 
-		clearInterval( this.checkInterval )
+		this.handler.onStreamStop( this.id )
+
+		clearTimeout( this.checkTimeout )
+	}
+
+	public reset( onComplete: ( fn: () => void ) => void ): void
+	{
+		const isRunning = this.state === State.running
+
+		if ( isRunning ) this.stop()
+
+		this.idList.length = 0
+
+		this.fileList.length = 0
+
+		this.refCursor = 0
+
+		this.noUpdateCount = 0
+
+		this.segments.clear()
+
+		onComplete( () =>
+		{
+			setTimeout( () => 
+			{
+				if ( isRunning ) this.start()
+			}, 1000 )
+		} )
 	}
 }
