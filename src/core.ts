@@ -13,8 +13,6 @@ implements
 	StreamProvider,
 	NormalStreamHandler
 {
-	public validatePlaylistResponse: ( items: Playlist ) => Playlist
-
 	private streams: Record<string, Stream>
 
 	private player: Player
@@ -30,8 +28,6 @@ implements
 	constructor( private context: SyllidContextInterface ) 
 	{
 		this.bindFns()
-
-		this.validatePlaylistResponse = this.validatePlaylist
 
 		this.player = new Player( this )
 
@@ -88,56 +84,26 @@ implements
 
 		this.noData = this.noData.bind( this )
 
-		this.randomInt = this.randomInt.bind( this )
-
 		this.onLengthUpdate = this.onLengthUpdate.bind( this )
 
-		this.onResetPlayback = this.onResetPlayback.bind( this )
-	}
-
-	public getChannels(): number
-	{
-		return this.player.channels
-	}
-
-	public randomInt( from: number, to: number ): number
-	{
-		if ( to < from ) return from
-		
-		return Math.floor( Math.random() * ( to - from ) + from )
-	}
-
-	private validatePlaylist( items: Playlist ): Playlist
-	{
-		if ( !Array.isArray( items ) ) 
-		{
-			throw Error( `Playlist is not an array.` )
-		}
-
-		items.forEach( ( i: PlaylistItem ): void => 
-		{
-			try 
-			{
-				new URL( i.segmentURL ).toString()
-			}
-			catch
-			{
-				throw Error( `${i.segmentURL} in playlist is invalid URL.` )
-			}
-
-			if ( !i.segmentID || typeof i.segmentID !== `string` ) 
-			{
-				throw Error( `${i.segmentID || `Missing ID`} in playlist is invalid ID.` )
-			}
-		} )
-
-		return items
+		this.validatePlaylistResponse = this.validatePlaylistResponse.bind( this )
 	}
 
 	private isNormalStream( stream: Stream ): stream is NormalStream
 	{
 		return stream.type === `normal`
 	}
+
+
+	/**
+	 * 
+	 * 
+	 * Player handlers
+	 * 
+	 * 
+	 */
+
+
 
 	public bufferSource( id: string ): void
 	{
@@ -173,6 +139,20 @@ implements
 		this.context.onMuteChannel( id, channel )
 	}
 
+	public onSourcesEnded( ids: string[] ): void
+	{
+		this.context.onEndStreams( ids )
+	}
+
+
+	/**
+	 * 
+	 * 
+	 * Stream providers
+	 * 
+	 * 
+	 */
+
 	public async decodeSegment( data: Uint8Array ): Promise<Float32Array>
 	{
 		const workerID = await this.getWorkerID()
@@ -196,16 +176,123 @@ implements
 		} )
 	}
 
+	public validatePlaylistResponse( items: Playlist ): Playlist
+	{
+		if ( !Array.isArray( items ) ) 
+		{
+			throw Error( `Playlist is not an array.` )
+		}
+
+		items.forEach( ( i: PlaylistItem ): void => 
+		{
+			try 
+			{
+				new URL( i.segmentURL ).toString()
+			}
+			catch
+			{
+				throw Error( `${i.segmentURL} in playlist is invalid URL.` )
+			}
+
+			if ( !i.segmentID || typeof i.segmentID !== `string` ) 
+			{
+				throw Error( `${i.segmentID || `Missing ID`} in playlist is invalid ID.` )
+			}
+		} )
+
+		return items
+	}
+
+
+	/**
+	 * 
+	 * 
+	 *  Stream handler
+	 * 
+	 * 
+	 */
+
+	
+
+
+	public handleSegment( streamID: string, data: Float32Array, segmentID: string ): void
+	{
+		this.player.feed( streamID, segmentID, data )
+	}
+
+	public onStreamStart( id: string ): void
+	{
+		this.player.startSource( id )
+	}
+
+	public onStreamStop( id: string ): void
+	{
+		this.player.stopSource( id )
+	}
+
+	public onWarning( message: string | Error | ErrorEvent ): void 
+	{
+		this.context.onWarning( message )
+	}
+
+	public onFailure( error: string | Error | ErrorEvent ): void 
+	{
+		this.context.onFailure( error )
+	}
+
+	public noData( id: string ): void
+	{
+		this.context.onNoData( id )
+	}
+
+
+
+	/**
+	 * 
+	 * 
+	 *  Normal stream handler
+	 * 
+	 * 
+	 */
+
+
+
+	public onLengthUpdate( id: string, length: number ): void
+	{
+		this.context.onLengthUpdate( id, length )
+	}
+
+	public onSegmentPositions( id: string, positions: Position[] ): void
+	{
+		this.context.onSegmentPositions( id, positions )
+	}
+
+	public onSetPosition( id: string, position: number ): void
+	{
+		this.context.onSetPosition( id, position )
+	}
+
+
+
+	/**
+	 * 
+	 * 
+	 *  Core API
+	 * 
+	 * 
+	 */
+
+
+
 	public async init(): Promise<void>
 	{
-		if ( !this.initialised )
-		{
-			this.initialised = true
+		if ( this.initialised ) return
+		
+		this.initialised = true
 
-			await this.player.init()
+		await this.player.init()
 
-			this.workerPool = new WorkerPool( 4, this, this.player.sampleRate() )
-		}
+		this.workerPool = new WorkerPool( 4, this, this.player.sampleRate() )
 	}
 
 	public startStream( id: string ): void
@@ -218,16 +305,6 @@ implements
 	public stopStream( id: string ): void
 	{
 		this.streams[ id ]?.stop()
-	}
-
-	public onStreamStart( id: string ): void
-	{
-		this.player.startSource( id )
-	}
-
-	public onStreamStop( id: string ): void
-	{
-		this.player.stopSource( id )
 	}
 
 	public startStreamChannel( streamID: string, channelIndex: number ): void
@@ -256,16 +333,6 @@ implements
 		return this
 	}
 
-	public onWarning( message: string | Error | ErrorEvent ): void 
-	{
-		this.context.onWarning( message )
-	}
-
-	public onFailure( error: string | Error | ErrorEvent ): void 
-	{
-		this.context.onFailure( error )
-	}
-
 	public addLiveStream( id: string, endpoint: string ): void
 	{
 		if ( this.streams[ id ] ) return
@@ -281,7 +348,7 @@ implements
 
 		this.init()
 
-		this.streams[ id ] = new RandomStream( id, endpoint, 10, this, this, this )
+		this.streams[ id ] = new RandomStream( id, endpoint, 10, this, this )
 	}
 
 	public addNormalStream( id: string, endpoint: string ): void
@@ -291,30 +358,6 @@ implements
 		this.init()
 
 		this.streams[ id ] = new NormalStream( id, endpoint, 10, this, this, this )
-	}
-
-	public handleSegment( streamID: string, data: Float32Array, segmentID: string ): void
-	{
-		this.player.feed( streamID, segmentID, data )
-	}
-
-	public noData( id: string ): void
-	{
-		// emit no data to context
-		// possibly stop player/ output
-		// this.player.stopSource( id )
-
-		// this.context.onNoData( id )
-	}
-
-	public onLengthUpdate( id: string, length: number ): void
-	{
-		this.context.onLengthUpdate( id, length )
-	}
-
-	public onResetPlayback( id: string ): void
-	{
-		this.player.resetSourcePlayback( id )
 	}
 
 	public setPosition( id: string, position: number ): void
@@ -327,8 +370,8 @@ implements
 		}
 	}
 
-	public onSegmentPositions( id: string, positions: Position[] ): void
+	public getChannels(): number
 	{
-		this.context.onSegmentPositions( id, positions )
+		return this.player.channels
 	}
 }

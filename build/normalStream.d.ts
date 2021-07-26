@@ -1,8 +1,8 @@
 import { PathProvider, StreamHandler, StreamProvider } from "./streamCore";
 export interface NormalStreamHandler {
     onLengthUpdate: (id: string, length: number) => void;
-    onResetPlayback: (id: string) => void;
     onSegmentPositions: (id: string, positions: Position[]) => void;
+    onSetPosition: (id: string, position: number) => void;
 }
 export declare class NormalStream implements Stream, PathProvider {
     private id;

@@ -4,9 +4,9 @@ export interface NormalStreamHandler
 {
 	onLengthUpdate: ( id: string, length: number ) => void
 
-	onResetPlayback: ( id: string ) => void
-
 	onSegmentPositions: ( id: string, positions: Position[] ) => void
+	
+	onSetPosition: ( id: string, position: number ) => void
 }
 
 enum PositionState
@@ -156,8 +156,6 @@ export class NormalStream implements Stream, PathProvider
 
 	private updateFilePositionReference()
 	{
-		console.log( this.currentLength, this.positionSetState, this.position, this.segmentPosition, this.core.fileList, this.core.idList, this.fileIndexRef )
-
 		if ( this.positionSetState === PositionState.updating ) return
 
 		let position = this.segmentPosition.length > 0
@@ -166,7 +164,7 @@ export class NormalStream implements Stream, PathProvider
 
 		const positions: Position[] = []
 
-		if ( this.segmentPosition.length - this.position >= this.currentLength - this.position )
+		if ( this.segmentPosition.length >= this.currentLength - this.position )
 		{
 			throw Error( `Can't add more positions, maximum length reached` )
 		}
@@ -200,7 +198,7 @@ export class NormalStream implements Stream, PathProvider
 		return this.currentLength === 0
 			? ``
 			: this.core.idList.length > 0
-				? this.core.idList.length - this.position >= this.currentLength - this.position
+				? this.core.idList.length >= this.currentLength - this.position
 					? ``
 					: new URL(
 						`${this.core.idList[ this.core.idList.length - 1 ]}`,
@@ -233,22 +231,21 @@ export class NormalStream implements Stream, PathProvider
 
 		this.positionSetState = PositionState.updating
 
-		this.core.reset( done =>
-		{
-			// this.normalHandler.onResetPlayback( this.id )
-		
-			this.position = position
-	
-			this.fileIndexRef = 0
-	
-			this.segmentPosition.length = 0
-
-			setTimeout( () => 
+		this.core.reset()
+			.then( () =>
 			{
-				this.positionSetState = PositionState.done
-			}, 1000 )
+				this.position = position
+	
+				this.fileIndexRef = 0
+		
+				this.segmentPosition.length = 0
 
-			done()
-		} )
+				setTimeout( () => 
+				{
+					this.positionSetState = PositionState.done
+
+					this.normalHandler.onSetPosition( this.id, position )
+				}, 1000 )
+			} )
 	}
 }

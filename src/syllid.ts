@@ -33,6 +33,10 @@ export interface SyllidContextInterface
 	onLengthUpdate: ( id: string, length: number ) => void
 
 	onSegmentPositions: ( id: string, positions: Position[] ) => void
+
+	onEndStreams: ( ids: string[] ) => void
+
+	onSetPosition: ( id: string, position: number ) => void
 }
 
 export class Syllid

@@ -17,6 +17,8 @@ export interface SyllidContextInterface {
     onMuteChannel: (streamID: string, channelIndex: number) => void;
     onLengthUpdate: (id: string, length: number) => void;
     onSegmentPositions: (id: string, positions: Position[]) => void;
+    onEndStreams: (ids: string[]) => void;
+    onSetPosition: (id: string, position: number) => void;
 }
 export declare class Syllid {
     private context;

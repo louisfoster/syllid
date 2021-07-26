@@ -17,6 +17,10 @@ export class UI
 
 	private scrubPos: number
 
+	private scrubbing: boolean
+
+	private noData: boolean
+
 	constructor(
 		private id: string,
 		mount: HTMLElement,
@@ -52,6 +56,10 @@ export class UI
 		}
 
 		this.isNormal = this.onPositionChange !== undefined
+
+		this.scrubbing = false
+
+		this.noData = false
 
 		if ( this.isNormal ) this.scrubber()
 	}
@@ -209,6 +217,8 @@ export class UI
 
 	private updateScrub()
 	{
+		this.scrubbing = true
+		
 		const time = this.ui.scrubber.querySelector( `div > span:first-child` )
 
 		const scrub = this.ui.scrubber.querySelector( `input` )
@@ -217,15 +227,15 @@ export class UI
 		{
 			this.scrubPos = parseInt( scrub.value ) ?? 0
 
-			console.log( `update`, this.scrubPos )
-
 			time.textContent = this.lengthToTime( this.scrubPos )
 		}
 	}
 
 	private emitPosition()
 	{
-		console.log( `emit`, this.scrubPos )
+		const scrub = this.ui.scrubber.querySelector( `input` )
+
+		if ( scrub ) scrub.disabled = true
 
 		this.onPositionChange?.( this.scrubPos )
 	}
@@ -250,10 +260,8 @@ export class UI
 	{
 		this.ui.playing.textContent = `Playing: ${segmentID}`
 
-		if ( position && this.isNormal )
+		if ( position && this.isNormal && !this.scrubbing )
 		{
-			// NOTE: updates might need to pause if scrubbing
-
 			this.scrubPos = position
 			
 			const time = this.ui.scrubber.querySelector( `div > span:first-child` )
@@ -304,7 +312,7 @@ export class UI
 
 	public setNoData(): void
 	{
-		this.ui.playing.textContent = `No data`
+		this.noData = true
 	}
 
 	public setRangeLength( length: number ): void
@@ -320,5 +328,55 @@ export class UI
 		const time = this.ui.scrubber.querySelector( `div > span:last-child` )
 
 		if ( time ) time.textContent = ` / ${this.lengthToTime( this.scrubLen )}`
+	}
+
+	public setEnded(): void
+	{
+		if ( !this.isNormal )
+		{
+			if ( this.noData )
+			{
+				this.ui.playing.textContent = `No data`
+
+				this.syllid.stopStream( this.id )
+			}
+		}
+		else
+		{
+			const scrub = this.ui.scrubber.querySelector( `input` )
+	
+			this.scrubPos = this.scrubLen
+
+			if ( scrub )
+			{
+				scrub.value = `${this.scrubPos}`
+			}
+			
+			const time = this.ui.scrubber.querySelector( `div > span:first-child` )
+	
+			if ( time ) time.textContent = this.lengthToTime( this.scrubPos )
+		}
+	}
+
+	public setPosition( position: number ): void
+	{
+		if ( !this.isNormal ) return
+
+		this.scrubbing = false
+
+		const scrub = this.ui.scrubber.querySelector( `input` )
+
+		this.scrubPos = position
+
+		if ( scrub )
+		{
+			scrub.disabled = false
+
+			scrub.value = `${this.scrubPos}`
+		}
+			
+		const time = this.ui.scrubber.querySelector( `div > span:first-child` )
+
+		if ( time ) time.textContent = this.lengthToTime( this.scrubPos )
 	}
 }

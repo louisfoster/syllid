@@ -120,5 +120,13 @@ class App {
             this.positions[streamID][id] = position;
         }
     }
+    onEndStreams(ids) {
+        for (const id of ids) {
+            this.ui[id].setEnded();
+        }
+    }
+    onSetPosition(id, position) {
+        this.ui[id].setPosition(position);
+    }
 }
 App.init();

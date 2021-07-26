@@ -46,17 +46,10 @@ interface AddMessage
 	index: number
 }
 
-interface ResetMessage
-{
-	type: `reset`
-	id: string
-}
-
 type Message =
 	| StateMessage
 	| BufferMessage
 	| AddMessage
-	| ResetMessage
 
 interface FeedMessage
 {
@@ -76,7 +69,13 @@ interface IDMessage
 	idList: IDMessageItem[]
 }
 
-type WorkletMessage = FeedMessage | IDMessage
+interface EndMessage
+{
+	type: `end`
+	idList: string[]
+}
+
+type WorkletMessage = FeedMessage | IDMessage | EndMessage
 
 interface BufferData
 {

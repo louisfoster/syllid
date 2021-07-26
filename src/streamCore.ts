@@ -193,7 +193,7 @@ export class StreamCore implements Stream
 		{	
 			this.handler.noData( this.id )
 
-			this.stop()
+			// this.stop()
 		}
 		else
 		{
@@ -358,28 +358,25 @@ export class StreamCore implements Stream
 		clearTimeout( this.checkTimeout )
 	}
 
-	public reset( onComplete: ( fn: () => void ) => void ): void
+	public reset(): Promise<void>
 	{
-		const isRunning = this.state === State.running
-
-		if ( isRunning ) this.stop()
-
-		this.idList.length = 0
-
-		this.fileList.length = 0
-
-		this.refCursor = 0
-
-		this.noUpdateCount = 0
-
-		this.segments.clear()
-
-		onComplete( () =>
+		return new Promise( resolve => 
 		{
-			setTimeout( () => 
-			{
-				if ( isRunning ) this.start()
-			}, 1000 )
+			const isRunning = this.state === State.running
+	
+			if ( isRunning ) this.stop()
+	
+			this.idList.length = 0
+	
+			this.fileList.length = 0
+	
+			this.refCursor = 0
+	
+			this.noUpdateCount = 0
+	
+			this.segments.clear()
+
+			resolve()
 		} )
 	}
 }

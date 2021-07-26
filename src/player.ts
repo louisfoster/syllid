@@ -42,7 +42,8 @@ enum SourceState
 enum WorkletMessageType
 {
 	feed = `feed`,
-	id = `id`
+	id = `id`,
+	end = `end`
 }
 
 interface SourceData
@@ -74,6 +75,8 @@ export interface PlayerHandler
 	onStartSourceChannel: ( id: string, channel: number ) => void
 
 	onStopSourceChannel: ( id: string, channel: number ) => void
+
+	onSourcesEnded: ( ids: string[] ) => void
 }
 
 export class Player
@@ -220,14 +223,6 @@ export class Player
 		}
 	}
 
-	private resetMessage( id: string ): ResetMessage
-	{
-		return {
-			id,
-			type: MessageType.reset
-		}
-	}
-
 	public async init(): Promise<void>
 	{
 		this.setupCtx()
@@ -276,6 +271,11 @@ export class Player
 		{
 			// IDs of segments currently playing
 			this.handler.onPlayingBuffers( event.data.idList )
+		}
+		else if ( event.data.type === WorkletMessageType.end )
+		{
+			// IDs of segments currently playing
+			this.handler.onSourcesEnded( event.data.idList )
 		}
 		else
 		{
@@ -453,10 +453,5 @@ export class Player
 	public stop(): void
 	{
 		this.ctx?.suspend()
-	}
-
-	public resetSourcePlayback( id: string ): void
-	{
-		this.worklet?.port.postMessage( this.resetMessage( id ) )
 	}
 }

@@ -64,6 +64,6 @@ export declare class StreamCore implements Stream {
     nextSegments(): void;
     start(): void;
     stop(): void;
-    reset(onComplete: (fn: () => void) => void): void;
+    reset(): Promise<void>;
 }
 //# sourceMappingURL=streamCore.d.ts.map

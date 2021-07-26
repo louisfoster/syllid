@@ -204,6 +204,19 @@ class App implements SyllidContextInterface
 			this.positions[ streamID ][ id ] = position
 		}
 	}
+
+	public onEndStreams( ids: string[] ): void
+	{
+		for( const id of ids )
+		{
+			this.ui[ id ].setEnded()
+		}
+	}
+
+	public onSetPosition( id: string, position: number ): void
+	{
+		this.ui[ id ].setPosition( position )
+	}
 }
 
 App.init()

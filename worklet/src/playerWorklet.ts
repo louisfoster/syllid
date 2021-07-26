@@ -24,14 +24,14 @@ enum MessageType
 {
 	state = `state`,
 	buffer = `buffer`,
-	add = `add`,
-	reset = `reset`
+	add = `add`
 }
 
 enum EmitType
 {
 	feed = `feed`,
-	id = `id`
+	id = `id`,
+	end = `end`
 }
 
 enum BufferState
@@ -50,6 +50,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 	private playingBuffer: IDMessageItem[]
 
+	private endBuffer: string[]
+
 	private requestBuffer: string[]
 
 	constructor( options?: AudioWorkletNodeOptions )
@@ -64,6 +66,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 		this.playingBuffer = []
 
+		this.endBuffer = []
+
 		this.requestBuffer = []
 
 		this.port.onmessage = e => this.handleMessage( e )
@@ -71,8 +75,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.handlers = {
 			[ MessageType.state ]: this.handleState,
 			[ MessageType.buffer ]: this.handleBuffer,
-			[ MessageType.add ]: this.handleAdd,
-			[ MessageType.reset ]: this.handleReset
+			[ MessageType.add ]: this.handleAdd
 		}
 	}
 
@@ -85,8 +88,6 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.handleBuffer = this.handleBuffer.bind( this )
 
 		this.handleAdd = this.handleAdd.bind( this )
-
-		this.handleReset = this.handleReset.bind( this )
 
 		this.bufferKey = this.bufferKey.bind( this )
 
@@ -185,31 +186,14 @@ class PlayerWorklet extends AudioWorkletProcessor
 		return number
 	}
 
-	private handleReset( data: Message )
-	{
-		// Wrong type
-		if ( data.type !== MessageType.reset ) return
-
-		// Invalid data
-		if ( typeof data.id !== `string` ) return
-		
-		// No relevant stream
-		const index = this.sourceKey[ data.id ]
-
-		if ( index === undefined ) return
-
-		const state = this.sources[ index ].state
-
-		this.sources[ index ] = this.newStreamItem( data.id )
-
-		this.sources[ index ].state = state
-	}
-
 	// Clean up tasks
 	private onEndProcess()
 	{
 		if ( this.playingBuffer.length > 0 )
 			this.port.postMessage( this.emitBufferIDs( this.playingBuffer ) )
+
+		if ( this.endBuffer.length > 0 )
+			this.port.postMessage( this.emitEndIDs( this.endBuffer ) )
 
 		this.requestBuffer.length = 0
 
@@ -259,6 +243,14 @@ class PlayerWorklet extends AudioWorkletProcessor
 		}
 	}
 
+	private emitEndIDs( idList: string[] ): EndMessage
+	{
+		return {
+			idList,
+			type: EmitType.end
+		}
+	}
+
 	/**
 	 * Output matrix:
 	 * - First dimension is an output in a list of outputs, in this case, just 1
@@ -269,6 +261,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 		try
 		{
 			this.playingBuffer.length = 0
+
+			this.endBuffer.length = 0
 
 			for ( let s = 0; s < this.sources.length; s += 1 )
 			{		
@@ -339,6 +333,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 						source.currentBuffer += 1
 
 						source.bufferState = BufferState.new
+
+						if ( !source[ source.currentBuffer ] ) this.endBuffer.push( source.id )
 					}
 				}
 			}

@@ -1,10 +1,5 @@
 import { PathProvider, StreamCore, StreamHandler, StreamProvider } from "./streamCore"
 
-export interface RandomStreamProvider
-{
-	randomInt: ( min: number, max: number ) => number
-}
-
 export class RandomStream implements Stream, PathProvider
 {
 	private core: StreamCore
@@ -22,8 +17,7 @@ export class RandomStream implements Stream, PathProvider
 		private endpoint: string,
 		private bufferSize: number = 10,
 		private handler: StreamHandler,
-		private provider: StreamProvider,
-		private random: RandomStreamProvider )
+		private provider: StreamProvider )
 	{
 		this.bindFns()
 
@@ -50,7 +44,7 @@ export class RandomStream implements Stream, PathProvider
 
 					// amount of items returned is randomised
 					return ( items.length > 1 )
-						? items.slice( 0, Math.round( Math.random() * ( items.length - 1 ) + 1 ) )
+						? items.slice( 0, this.randomInt( 1, items.length ) )
 						: items
 				}
 			},
@@ -82,13 +76,20 @@ export class RandomStream implements Stream, PathProvider
 	{
 		if ( this.count > 0 ) return
 
-		this.count = this.random.randomInt( 0, 5 )
+		this.count = this.randomInt( 0, 5 )
 
 		this.location = this.endpoint
 
 		this.core.idList = []
 
 		this.freshLocation = true
+	}
+
+	private randomInt( from: number, to: number ): number
+	{
+		if ( to < from ) return from
+		
+		return Math.floor( Math.random() * ( to - from ) + from )
 	}
 
 	public setStaleLocation( location: string ): void

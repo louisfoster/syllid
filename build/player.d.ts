@@ -7,6 +7,7 @@ export interface PlayerHandler {
     onStopSource: (id: string) => void;
     onStartSourceChannel: (id: string, channel: number) => void;
     onStopSourceChannel: (id: string, channel: number) => void;
+    onSourcesEnded: (ids: string[]) => void;
 }
 export declare class Player {
     private handler;
@@ -46,7 +47,6 @@ export declare class Player {
     private bufferMessage;
     private stateMessage;
     private addMessage;
-    private resetMessage;
     init(): Promise<void>;
     private handleWorkletMessage;
     private addSource;
@@ -58,6 +58,5 @@ export declare class Player {
     stopSourceChannel(sourceID: string, channel: number, onActive?: () => void): void;
     sampleRate(): number;
     stop(): void;
-    resetSourcePlayback(id: string): void;
 }
 //# sourceMappingURL=player.d.ts.map
