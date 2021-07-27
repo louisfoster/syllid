@@ -16,6 +16,8 @@ export interface StreamHandler
 
 	noData: ( id: string ) => void
 
+	hasData: ( id: string ) => void
+
 	onStreamStart: ( id: string ) => void
 
 	onStreamStop: ( id: string ) => void
@@ -62,6 +64,9 @@ export class StreamCore implements Stream
 	// Segment feed size
 	private feedSize: number
 
+	// Flag: no data returned by endpoint
+	private noData: boolean
+
 	// Segment URLs
 	public fileList: string[]
 
@@ -75,6 +80,7 @@ export class StreamCore implements Stream
 		private handler: StreamHandler,
 		private provider: StreamProvider,
 		private path: PathProvider,
+		private onResponseURL: ( url: string ) => void,
 		private onFileListUpdated?: () => void )
 	{
 		this.bindFns()
@@ -100,6 +106,8 @@ export class StreamCore implements Stream
 		this.continueFetch = false
 
 		this.feedSize = 5
+
+		this.noData = false
 	}
 
 	private bindFns()
@@ -147,6 +155,8 @@ export class StreamCore implements Stream
 					throw Error( `Invalid response from endpoint.` )
 				}
 
+				this.onResponseURL( response.url )
+
 				return response.json()
 			} )
 			.then( ( items: Playlist ) => this.provider.validatePlaylistResponse( items ) )
@@ -169,6 +179,13 @@ export class StreamCore implements Stream
 		else
 		{
 			this.noUpdateCount = 0
+
+			if ( this.noData )
+			{
+				this.noData = false
+
+				this.handler.hasData( this.id )
+			}
 		}
 
 		this.checkTimeout = window.setTimeout(
@@ -189,14 +206,12 @@ export class StreamCore implements Stream
 	{
 		this.noUpdateCount += 1
 
-		if ( this.noUpdateCount > 5 )
-		{	
-			this.handler.noData( this.id )
+		if ( !this.noData ) this.handler.noData( this.id )
 
-			// this.stop()
-		}
-		else
-		{
+		this.noData = true
+
+		if ( this.noUpdateCount < 6 )
+		{	
 			this.checkTimeout = window.setTimeout(
 				() => this.checkNewSegments(),
 				Math.round( Math.exp( this.noUpdateCount ) * ( 100 / this.noUpdateCount ) ) )

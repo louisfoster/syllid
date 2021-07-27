@@ -174,7 +174,16 @@ export class UI
 		{
 			this.disableBtn( btn )
 			
-			this.syllid.stopStream( this.id )
+			if ( this.isNormal )
+			{
+				this.scrubbing = true
+
+				this.emitPosition()
+			}
+			else
+			{
+				this.syllid.stopStream( this.id )
+			}
 		}
 	}
 
@@ -315,6 +324,11 @@ export class UI
 		this.noData = true
 	}
 
+	public setHasData(): void
+	{
+		this.noData = false
+	}
+
 	public setRangeLength( length: number ): void
 	{
 		if ( !this.isNormal ) return
@@ -332,17 +346,17 @@ export class UI
 
 	public setEnded(): void
 	{
-		if ( !this.isNormal )
+		if ( this.noData )
 		{
-			if ( this.noData )
-			{
-				this.ui.playing.textContent = `No data`
+			this.ui.playing.textContent = `No data`
 
-				this.syllid.stopStream( this.id )
-			}
+			this.syllid.stopStream( this.id )
 		}
-		else
+
+		if ( this.isNormal )
 		{
+			this.syllid.stopStream( this.id )
+
 			const scrub = this.ui.scrubber.querySelector( `input` )
 	
 			this.scrubPos = this.scrubLen

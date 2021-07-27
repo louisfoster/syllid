@@ -33,6 +33,9 @@ export class NormalStream implements Stream, PathProvider
 	
 	private currentLength: number
 
+	// Flag: indicate base redirect URL is set
+	private endpointSet: boolean
+
 	public type: `normal`
 
 	constructor(
@@ -49,7 +52,7 @@ export class NormalStream implements Stream, PathProvider
 
 		this.endpoint = this.addSlash( this.endpoint )
 
-		this.lengthURL = new URL( `length`, this.endpoint ).toString()
+		this.lengthURL = this.endpointWithLengthQuery()
 
 		this.core = new StreamCore(
 			this.type,
@@ -58,6 +61,7 @@ export class NormalStream implements Stream, PathProvider
 			this.handler,
 			this.provider,
 			this,
+			() => void {},
 			this.updateFilePositionReference )
 
 		this.position = 0
@@ -72,7 +76,9 @@ export class NormalStream implements Stream, PathProvider
 
 		this.positionSetState = PositionState.done
 
-		// this.start()
+		this.endpointSet = false
+
+		this.length()
 	}
 
 	private bindFns()
@@ -92,6 +98,23 @@ export class NormalStream implements Stream, PathProvider
 		this.length = this.length.bind( this )
 
 		this.updateLength = this.updateLength.bind( this )
+
+		this.handleResponseURL = this.handleResponseURL.bind( this )
+	}
+
+	private handleResponseURL( _url: string )
+	{
+		if ( this.endpointSet ) return
+
+		this.endpointSet = true
+
+		const url = new URL( _url )
+
+		const redirectURL = this.addSlash( `${url.origin}${url.pathname}` )
+
+		this.endpoint = redirectURL
+
+		this.lengthURL = this.endpointWithLengthQuery()
 	}
 
 	private addSlash( url: string ): string 
@@ -101,6 +124,11 @@ export class NormalStream implements Stream, PathProvider
 
 	private updateLength( length: number )
 	{
+		if ( this.currentLength > length )
+		{
+			throw Error( `Impossible length response.` )
+		}
+
 		this.currentLength = length
 
 		this.normalHandler.onLengthUpdate( this.id, this.currentLength )
@@ -117,6 +145,8 @@ export class NormalStream implements Stream, PathProvider
 
 					this.handler.onWarning( `Invalid response from endpoint.` )
 				}
+
+				this.handleResponseURL( response.url )
 
 				return response.json()
 			} )
@@ -139,6 +169,16 @@ export class NormalStream implements Stream, PathProvider
 				
 				this.handler.onWarning( e.message )
 			} )
+	}
+
+	private endpointWithLengthQuery(): string
+	{
+		const _url = new URL( this.endpoint )
+
+		if( !_url.searchParams.has( `request` ) )
+			_url.searchParams.append( `request`, `length` )
+
+		return _url.toString()
 	}
 
 	private endpointWithQuery(): string

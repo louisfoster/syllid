@@ -77,6 +77,15 @@ const fromID = (i, id) =>
 		: data[i].urls.slice(index + 1, index + 6)
 }
 
+const lengthReq = (req, res) =>
+{
+	const num = parseInt(req.params.num)
+
+	normalID[num] = true
+
+	res.json({length: data[num].urls.length})
+}
+
 const app = express()
 
 app.use(express.static('example'))
@@ -87,14 +96,7 @@ app.use('/audio', express.static('example/audio'))
 
 app.get('/decoderWorker.min.wasm', (req, res) => res.redirect(`/build/decoderWorker.min.wasm`))
 
-app.get('/playlist/:num/length', (req, res) =>
-{
-	const num = parseInt(req.params.num)
-
-	normalID[num] = true
-
-	res.json({length: data[num].urls.length})
-})
+app.get('/playlist/:num/length', lengthReq)
 
 app.get('/playlist/:num/:id', (req, res) =>
 {
@@ -115,14 +117,27 @@ app.get('/playlist/:num', (req, res) =>
 
 		res.json(data[num].urls.slice(pos, pos + 10))
 	}
+	else if (req.query.request === `length`)
+	{
+		lengthReq(req, res)
+	}
 	else res.json(data[num].urls)
 })
 
 // test for group redirects
 app.get('/playlisto', (req, res) =>
 {
-	let path = `/playlist/${Math.floor(Math.random() * this.data.length)}`
+	let path = `/playlist/${Math.floor(Math.random() * data.length)}`
 	if (req.query.start === `random`) path += `?start=random`
+	else if (req.query.start === `latest`) path += `?start=latest`
+	else if (req.query.start === `position`)
+	{
+		path += `?start=position&position=${req.query.position ?? 0}`
+	}
+	else if (req.query.request === `length`)
+	{
+		path += `?request=length`
+	}
 	res.redirect(path)
 })
 

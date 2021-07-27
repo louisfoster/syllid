@@ -5,7 +5,7 @@
       "imports": []
     },
     "streamCore.js": {
-      "bytes": 5017,
+      "bytes": 5271,
       "imports": [
         {
           "path": "web_modules/circular_buffer_js.js",
@@ -14,7 +14,7 @@
       ]
     },
     "liveStream.js": {
-      "bytes": 1336,
+      "bytes": 1704,
       "imports": [
         {
           "path": "streamCore.js",
@@ -23,7 +23,7 @@
       ]
     },
     "normalStream.js": {
-      "bytes": 4247,
+      "bytes": 4988,
       "imports": [
         {
           "path": "streamCore.js",
@@ -61,7 +61,7 @@
       ]
     },
     "randomStream.js": {
-      "bytes": 2417,
+      "bytes": 2559,
       "imports": [
         {
           "path": "streamCore.js",
@@ -87,7 +87,7 @@
       ]
     },
     "core.js": {
-      "bytes": 5384,
+      "bytes": 5436,
       "imports": [
         {
           "path": "liveStream.js",
@@ -133,13 +133,13 @@
           "bytesInOutput": 1969
         },
         "streamCore.js": {
-          "bytesInOutput": 3087
+          "bytesInOutput": 3244
         },
         "liveStream.js": {
-          "bytesInOutput": 942
+          "bytesInOutput": 1193
         },
         "normalStream.js": {
-          "bytesInOutput": 2933
+          "bytesInOutput": 3455
         },
         "__snowpack__/env.js": {
           "bytesInOutput": 55
@@ -154,7 +154,7 @@
           "bytesInOutput": 4525
         },
         "randomStream.js": {
-          "bytesInOutput": 1658
+          "bytesInOutput": 1751
         },
         "modules/opus-recorder/dist/decoder/decoderWorker.min.js": {
           "bytesInOutput": 205150
@@ -163,13 +163,13 @@
           "bytesInOutput": 2673
         },
         "core.js": {
-          "bytesInOutput": 3567
+          "bytesInOutput": 3604
         },
         "syllid.js": {
           "bytesInOutput": 687
         }
       },
-      "bytes": 233265
+      "bytes": 234325
     }
   }
 }

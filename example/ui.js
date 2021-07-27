@@ -98,7 +98,13 @@ export class UI {
         }
         else {
             this.disableBtn(btn);
-            this.syllid.stopStream(this.id);
+            if (this.isNormal) {
+                this.scrubbing = true;
+                this.emitPosition();
+            }
+            else {
+                this.syllid.stopStream(this.id);
+            }
         }
     }
     scrubber() {
@@ -179,6 +185,9 @@ export class UI {
     setNoData() {
         this.noData = true;
     }
+    setHasData() {
+        this.noData = false;
+    }
     setRangeLength(length) {
         if (!this.isNormal)
             return;
@@ -191,13 +200,12 @@ export class UI {
             time.textContent = ` / ${this.lengthToTime(this.scrubLen)}`;
     }
     setEnded() {
-        if (!this.isNormal) {
-            if (this.noData) {
-                this.ui.playing.textContent = `No data`;
-                this.syllid.stopStream(this.id);
-            }
+        if (this.noData) {
+            this.ui.playing.textContent = `No data`;
+            this.syllid.stopStream(this.id);
         }
-        else {
+        if (this.isNormal) {
+            this.syllid.stopStream(this.id);
             const scrub = this.ui.scrubber.querySelector(`input`);
             this.scrubPos = this.scrubLen;
             if (scrub) {

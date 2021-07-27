@@ -19,12 +19,15 @@ export declare class NormalStream implements Stream, PathProvider {
     private segmentPosition;
     private positionSetState;
     private currentLength;
+    private endpointSet;
     type: `normal`;
     constructor(id: string, endpoint: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, normalHandler: NormalStreamHandler);
     private bindFns;
+    private handleResponseURL;
     private addSlash;
     private updateLength;
     private length;
+    private endpointWithLengthQuery;
     private endpointWithQuery;
     private updateFilePositionReference;
     nextSegments(): void;

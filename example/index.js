@@ -112,6 +112,9 @@ class App {
     onNoData(id) {
         this.ui[id].setNoData();
     }
+    onHasData(id) {
+        this.ui[id].setHasData();
+    }
     onLengthUpdate(id, length) {
         this.ui[id].setRangeLength(length);
     }

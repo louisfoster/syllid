@@ -52,6 +52,7 @@ export declare class Core implements PlayerHandler, StreamHandler, StreamProvide
     onWarning(message: string | Error | ErrorEvent): void;
     onFailure(error: string | Error | ErrorEvent): void;
     noData(id: string): void;
+    hasData(id: string): void;
     /**
      *
      *

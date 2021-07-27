@@ -12,9 +12,9 @@ export declare class RandomStream implements Stream, PathProvider {
     type: `random`;
     constructor(id: string, endpoint: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider);
     private bindFns;
+    private handleResponseURL;
     private setFreshLocation;
     private randomInt;
-    setStaleLocation(location: string): void;
     private endpointWithQuery;
     private addSlash;
     path(): string;

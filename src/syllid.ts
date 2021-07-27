@@ -26,6 +26,8 @@ export interface SyllidContextInterface
 
 	onNoData: ( id: string ) => void
 
+	onHasData: ( id: string ) => void
+
 	onUnmuteChannel: ( streamID: string, channelIndex: number ) => void
 
 	onMuteChannel: ( streamID: string, channelIndex: number ) => void

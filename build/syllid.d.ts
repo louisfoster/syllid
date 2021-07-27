@@ -13,6 +13,7 @@ export interface SyllidContextInterface {
     onPlaying: (id: string) => void;
     onStopped: (id: string) => void;
     onNoData: (id: string) => void;
+    onHasData: (id: string) => void;
     onUnmuteChannel: (streamID: string, channelIndex: number) => void;
     onMuteChannel: (streamID: string, channelIndex: number) => void;
     onLengthUpdate: (id: string, length: number) => void;

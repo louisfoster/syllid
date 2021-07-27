@@ -192,6 +192,11 @@ class App implements SyllidContextInterface
 		this.ui[ id ].setNoData()
 	}
 
+	public onHasData( id: string ): void
+	{
+		this.ui[ id ].setHasData()
+	}
+
 	public onLengthUpdate( id: string, length: number ): void
 	{
 		this.ui[ id ].setRangeLength( length )

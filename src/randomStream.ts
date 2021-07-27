@@ -48,9 +48,8 @@ export class RandomStream implements Stream, PathProvider
 						: items
 				}
 			},
-			this )
-
-		// this.start()
+			this,
+			url => this.handleResponseURL( url ) )
 	}
 
 	private bindFns()
@@ -65,11 +64,25 @@ export class RandomStream implements Stream, PathProvider
 
 		this.setFreshLocation = this.setFreshLocation.bind( this )
 
-		this.setStaleLocation = this.setStaleLocation.bind( this )
-
 		this.endpointWithQuery = this.endpointWithQuery.bind( this )
 
 		this.addSlash = this.addSlash.bind( this )
+
+		this.handleResponseURL = this.handleResponseURL.bind( this )
+	}
+
+	private handleResponseURL( _url: string )
+	{
+		const url = new URL( _url )
+
+		const redirectURL = this.addSlash( `${url.origin}${url.pathname}` )
+
+		if ( this.freshLocation )
+		{
+			this.location = redirectURL
+			
+			this.freshLocation = false
+		}
 	}
 
 	private setFreshLocation(): void
@@ -90,16 +103,6 @@ export class RandomStream implements Stream, PathProvider
 		if ( to < from ) return from
 		
 		return Math.floor( Math.random() * ( to - from ) + from )
-	}
-
-	public setStaleLocation( location: string ): void
-	{
-		if ( this.freshLocation )
-		{
-			this.location = location
-			
-			this.freshLocation = false
-		}
 	}
 
 	private endpointWithQuery( endpoint: string ): string

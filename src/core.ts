@@ -245,6 +245,10 @@ implements
 		this.context.onNoData( id )
 	}
 
+	public hasData( id: string ): void
+	{
+		this.context.onHasData( id )
+	}
 
 
 	/**

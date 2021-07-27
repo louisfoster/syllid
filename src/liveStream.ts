@@ -4,6 +4,9 @@ export class LiveStream implements Stream, PathProvider
 {
 	private core: StreamCore
 
+	// Flag: indicate base redirect URL is set
+	private endpointSet: boolean
+
 	public type: `live`
 
 	constructor(
@@ -19,15 +22,16 @@ export class LiveStream implements Stream, PathProvider
 
 		this.endpoint = this.addSlash( this.endpoint )
 
+		this.endpointSet = false
+
 		this.core = new StreamCore(
 			this.type,
 			this.id,
 			this.bufferSize,
 			this.handler,
 			this.provider,
-			this )
-
-		// this.start()
+			this,
+			url => this.handleResponseURL( url ) )
 	}
 
 	private bindFns()
@@ -43,6 +47,21 @@ export class LiveStream implements Stream, PathProvider
 		this.endpointWithQuery = this.endpointWithQuery.bind( this )
 
 		this.addSlash = this.addSlash.bind( this )
+
+		this.handleResponseURL = this.handleResponseURL.bind( this )
+	}
+
+	private handleResponseURL( _url: string )
+	{
+		if ( this.endpointSet ) return
+
+		this.endpointSet = true
+
+		const url = new URL( _url )
+
+		const redirectURL = this.addSlash( `${url.origin}${url.pathname}` )
+
+		this.endpoint = redirectURL
 	}
 
 	private endpointWithQuery(): string

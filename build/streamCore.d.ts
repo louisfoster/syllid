@@ -3,6 +3,7 @@ export interface StreamHandler {
     onWarning: (message: string) => void;
     onFailure: (message: string) => void;
     noData: (id: string) => void;
+    hasData: (id: string) => void;
     onStreamStart: (id: string) => void;
     onStreamStop: (id: string) => void;
 }
@@ -20,6 +21,7 @@ export declare class StreamCore implements Stream {
     private handler;
     private provider;
     private path;
+    private onResponseURL;
     private onFileListUpdated?;
     private segments;
     private updateLock;
@@ -30,9 +32,10 @@ export declare class StreamCore implements Stream {
     private state;
     private continueFetch;
     private feedSize;
+    private noData;
     fileList: string[];
     idList: string[];
-    constructor(type: `live` | `normal` | `random`, id: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, path: PathProvider, onFileListUpdated?: (() => void) | undefined);
+    constructor(type: `live` | `normal` | `random`, id: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, path: PathProvider, onResponseURL: (url: string) => void, onFileListUpdated?: (() => void) | undefined);
     private bindFns;
     /**
      * Check if new segments are available
