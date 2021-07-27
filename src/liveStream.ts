@@ -86,11 +86,8 @@ export class LiveStream implements Stream, PathProvider
 
 	public path(): string 
 	{
-		return this.core.idList.length > 0
-			? new URL(
-				`${this.core.idList[ this.core.idList.length - 1 ]}`,
-				this.endpoint
-			).toString()
+		return this.core.nextID
+			? new URL( this.core.nextID, this.endpoint ).toString()
 			: this.endpointWithQuery()
 	}
 

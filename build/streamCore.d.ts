@@ -1,3 +1,4 @@
+import { circular_buffer as CircularBuffer } from "circular_buffer_js";
 export interface StreamHandler {
     handleSegment: (streamID: string, segment: Float32Array, id: string) => void;
     onWarning: (message: string) => void;
@@ -26,15 +27,14 @@ export declare class StreamCore implements Stream {
     private segments;
     private updateLock;
     private nextLock;
-    private refCursor;
     private checkTimeout;
     private noUpdateCount;
     private state;
     private continueFetch;
     private feedSize;
     private noData;
-    fileList: string[];
-    idList: string[];
+    fileList: CircularBuffer<string>;
+    nextID: string;
     constructor(type: `live` | `normal` | `random`, id: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, path: PathProvider, onResponseURL: (url: string) => void, onFileListUpdated?: (() => void) | undefined);
     private bindFns;
     /**

@@ -93,7 +93,7 @@ export class RandomStream implements Stream, PathProvider
 
 		this.location = this.endpoint
 
-		this.core.idList = []
+		this.core.nextID = ``
 
 		this.freshLocation = true
 	}
@@ -126,11 +126,8 @@ export class RandomStream implements Stream, PathProvider
 
 		this.count = this.count - 1
 
-		return this.core.idList.length > 0
-			? new URL(
-				`${this.core.idList[ this.core.idList.length - 1 ]}`,
-				this.location
-			).toString()
+		return this.core.nextID
+			? new URL( this.core.nextID, this.location ).toString()
 			: !this.location // if empty value
 				? this.location
 				: this.endpointWithQuery( this.location )

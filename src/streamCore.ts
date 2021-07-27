@@ -46,9 +46,6 @@ export class StreamCore implements Stream
 	// Feed segments semaphore
 	private nextLock: boolean
 
-	// Current index for fetching segments
-	private refCursor: number
-
 	// Get URLs interval
 	private checkTimeout: number
 
@@ -68,10 +65,10 @@ export class StreamCore implements Stream
 	private noData: boolean
 
 	// Segment URLs
-	public fileList: string[]
+	public fileList: CircularBuffer<string>
 
 	// Segment IDs
-	public idList: string[]
+	public nextID: string
 
 	constructor(
 		public type: `live` | `normal` | `random`,
@@ -85,17 +82,15 @@ export class StreamCore implements Stream
 	{
 		this.bindFns()
 
-		this.fileList = []
+		this.fileList = new CircularBuffer( this.bufferSize * 2 )
 
-		this.idList = []
+		this.nextID = ``
 
 		this.segments = new CircularBuffer( this.bufferSize )
 
 		this.updateLock = false
 
 		this.nextLock = false
-
-		this.refCursor = 0
 
 		this.noUpdateCount = 0
 
@@ -125,7 +120,9 @@ export class StreamCore implements Stream
 	 */
 	private checkNewSegments()
 	{
-		if ( this.fileList.length - this.refCursor > this.bufferSize * 1.5 )
+		if ( this.state === State.stopped ) return
+
+		if ( this.fileList.isFull )
 		{
 			this.checkTimeout = window.setTimeout(
 				() => this.checkNewSegments(),
@@ -188,18 +185,23 @@ export class StreamCore implements Stream
 			}
 		}
 
+		const len = Math.min( playlist.length, this.fileList.available )
+
 		this.checkTimeout = window.setTimeout(
 			() => this.checkNewSegments(),
-			Math.max( 0.5, playlist.length - 1 ) * 1000 )
+			Math.max( 0.5, len - 1 ) * 1000 )
 
-		for ( const { segmentID, segmentURL } of playlist )
+		for ( let i = 0; i < len; i += 1 )
 		{
-			this.fileList.push( segmentURL )
+			this.fileList.push( playlist[ i ].segmentURL )
 
-			this.idList.push( segmentID )
+			if ( i === len - 1 )
+			{
+				this.nextID = playlist[ i ].segmentID
+			}
 		}
 
-		this.onFileListUpdated?.()
+		if ( len ) this.onFileListUpdated?.()
 	}
 
 	private noUpdate()
@@ -234,15 +236,13 @@ export class StreamCore implements Stream
 
 		this.updateLock = true
 
-		while( this.segments.available )
+		while( this.segments.available && this.fileList.length > 0 )
 		{
-			const url = this.fileList[ this.refCursor ]
+			const url = this.fileList.pop()
 
 			if ( !url ) break
 
 			await this.getBuffer( url )
-
-			this.refCursor += 1
 		}
 
 		this.updateLock = false
@@ -381,11 +381,9 @@ export class StreamCore implements Stream
 	
 			if ( isRunning ) this.stop()
 	
-			this.idList.length = 0
+			this.nextID = ``
 	
-			this.fileList.length = 0
-	
-			this.refCursor = 0
+			this.fileList.clear()
 	
 			this.noUpdateCount = 0
 	

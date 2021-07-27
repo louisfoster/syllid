@@ -5,7 +5,7 @@
       "imports": []
     },
     "streamCore.js": {
-      "bytes": 5271,
+      "bytes": 5352,
       "imports": [
         {
           "path": "web_modules/circular_buffer_js.js",
@@ -14,7 +14,7 @@
       ]
     },
     "liveStream.js": {
-      "bytes": 1704,
+      "bytes": 1659,
       "imports": [
         {
           "path": "streamCore.js",
@@ -23,7 +23,7 @@
       ]
     },
     "normalStream.js": {
-      "bytes": 4988,
+      "bytes": 4989,
       "imports": [
         {
           "path": "streamCore.js",
@@ -61,7 +61,7 @@
       ]
     },
     "randomStream.js": {
-      "bytes": 2559,
+      "bytes": 2514,
       "imports": [
         {
           "path": "streamCore.js",
@@ -133,13 +133,13 @@
           "bytesInOutput": 1969
         },
         "streamCore.js": {
-          "bytesInOutput": 3244
+          "bytesInOutput": 3271
         },
         "liveStream.js": {
-          "bytesInOutput": 1193
+          "bytesInOutput": 1152
         },
         "normalStream.js": {
-          "bytesInOutput": 3455
+          "bytesInOutput": 3451
         },
         "__snowpack__/env.js": {
           "bytesInOutput": 55
@@ -154,7 +154,7 @@
           "bytesInOutput": 4525
         },
         "randomStream.js": {
-          "bytesInOutput": 1751
+          "bytesInOutput": 1710
         },
         "modules/opus-recorder/dist/decoder/decoderWorker.min.js": {
           "bytesInOutput": 205150
@@ -169,7 +169,7 @@
           "bytesInOutput": 687
         }
       },
-      "bytes": 234325
+      "bytes": 234266
     }
   }
 }

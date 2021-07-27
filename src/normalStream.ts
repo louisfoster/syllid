@@ -206,13 +206,15 @@ export class NormalStream implements Stream, PathProvider
 
 		if ( this.segmentPosition.length >= this.currentLength - this.position )
 		{
-			throw Error( `Can't add more positions, maximum length reached` )
+			this.handler.onWarning( `Can't add more positions, maximum length reached` )
+
+			return
 		}
 
 		for ( let i = this.fileIndexRef; i < this.core.fileList.length; i += 1 )
 		{
 			const positionItem: Position = {
-				id: this.core.fileList[ i ],
+				id: this.core.fileList.at( i ),
 				position: position
 			}
 
@@ -235,15 +237,12 @@ export class NormalStream implements Stream, PathProvider
 
 	public path(): string 
 	{
-		return this.currentLength === 0
+		return this.currentLength - this.position === 0
 			? ``
-			: this.core.idList.length > 0
-				? this.core.idList.length >= this.currentLength - this.position
+			: this.core.nextID
+				? this.core.fileList.length >= this.currentLength - this.position
 					? ``
-					: new URL(
-						`${this.core.idList[ this.core.idList.length - 1 ]}`,
-						this.endpoint
-					).toString()
+					: new URL( this.core.nextID, this.endpoint ).toString()
 				// if no position set, return normal endpoint
 				: this.position === 0
 					? this.endpoint
