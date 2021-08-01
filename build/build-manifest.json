@@ -23,7 +23,7 @@
       ]
     },
     "normalStream.js": {
-      "bytes": 4863,
+      "bytes": 5059,
       "imports": [
         {
           "path": "streamCore.js",
@@ -139,7 +139,7 @@
           "bytesInOutput": 1152
         },
         "normalStream.js": {
-          "bytesInOutput": 3338
+          "bytesInOutput": 3316
         },
         "__snowpack__/env.js": {
           "bytesInOutput": 55
@@ -169,7 +169,7 @@
           "bytesInOutput": 687
         }
       },
-      "bytes": 234144
+      "bytes": 234122
     }
   }
 }

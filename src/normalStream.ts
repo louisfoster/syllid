@@ -231,17 +231,31 @@ export class NormalStream implements Stream, PathProvider
 
 	public path(): string 
 	{
-		return this.currentLength - this.position === 0
-			? ``
-			: this.core.nextID
-				? this.core.fileList.length >= this.currentLength - this.position
-					? ``
-					: new URL( this.core.nextID, this.endpoint ).toString()
+		const playableLength = this.currentLength - this.position
+
+		const positionIsAtEnd = playableLength === 0
+
+		if ( positionIsAtEnd )
+		{
+			return `` // no more audio to be fetched
+		}
+
+		if ( this.core.nextID )
+		{
+			const allSegmentURLsFetched = this.core.fileList.length >= playableLength
+
+			return allSegmentURLsFetched
+				? `` // no more audio to be fetched
+				: new URL( this.core.nextID, this.endpoint ).toString()
+		}
+		else
+		{
+			return this.position === 0
 				// if no position set, return normal endpoint
-				: this.position === 0
-					? this.endpoint
-					// otherwise, return endpoint with position request
-					: this.endpointWithQuery()
+				? this.endpoint
+				// otherwise, return endpoint with position request
+				: this.endpointWithQuery()
+		}
 	}
 
 	public start(): void
