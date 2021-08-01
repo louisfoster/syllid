@@ -1,257 +1,131 @@
-import { ListProcessor, ListProcessorHandler } from "./listProcessor"
-import { Player } from "./player"
-import { ChannelStream, StreamHandler } from "./channelStream"
+import { Core } from "./core"
+
+export interface IDMessageItem
+{
+	sourceID: string
+	bufferID: string
+}
+
+export interface Position
+{
+	id: string
+	position: number
+}
 
 export interface SyllidContextInterface
 {
 	onWarning: ( message: string | Error | ErrorEvent ) => void
 
 	onFailure: ( error: string | Error | ErrorEvent ) => void
+
+	onPlayingSegments: ( idList: IDMessageItem[] ) => void
+
+	onPlaying: ( id: string ) => void
+
+	onStopped: ( id: string ) => void
+
+	onNoData: ( id: string ) => void
+
+	onHasData: ( id: string ) => void
+
+	onUnmuteChannel: ( streamID: string, channelIndex: number ) => void
+
+	onMuteChannel: ( streamID: string, channelIndex: number ) => void
+
+	onLengthUpdate: ( id: string, length: number ) => void
+
+	onSegmentPositions: ( id: string, positions: Position[] ) => void
+
+	onEndStreams: ( ids: string[] ) => void
+
+	onSetPosition: ( id: string, position: number ) => void
 }
 
-export class Syllid implements StreamHandler, ListProcessorHandler
+export class Syllid
 {
-	private locations: string[]
-
-	private urlLocationMap: Record<string, number>
-
-	private streams: ChannelStream[]
-
-	private player: Player
-
-	private processor?: ListProcessor
-
-	private initialised: boolean
+	private core: Core
 
 	/**
-	 * 
+	 * Syllid Lib Interface
 	 * @param context Interface to the context importing this lib
 	 */
 	constructor( private context: SyllidContextInterface ) 
 	{
-		this.bindFns()
-		
-		this.locations = []
-
-		this.urlLocationMap = {}
-
-		this.player = new Player()
-
-		this.streams = []
-
-		this.initialised = false
-	}
-
-	private bindFns()
-	{
-		this.onBuffer = this.onBuffer.bind( this )
-
-		this.getSegmentURLs = this.getSegmentURLs.bind( this )
-
-		this.bufferSegmentData = this.bufferSegmentData.bind( this )
-
-		this.playChannel = this.playChannel.bind( this )
-
-		this.stopChannel = this.stopChannel.bind( this )
-
-		this.addURL = this.addURL.bind( this )
-
-		this.removeURL = this.removeURL.bind( this )
-
-		this.stop = this.stop.bind( this )
-	}
-
-	private createStreams(): void 
-	{
-		for ( let i = 0; i < this.getChannels(); i++ ) 
-		{
-			this.streams[ i ] = new ChannelStream( i, this, this )
-		}
+		this.core = new Core( this.context )
 	}
 
 	public getChannels(): number
 	{
-		return this.player.channels
+		return this.core.getChannels()
 	}
 
-	public randomInt( from: number, to: number ): number
+	public async init(): Promise<this>
 	{
-		if ( to < from ) return from
-		
-		return Math.floor( Math.random() * ( to - from ) + from )
+		await this.core.init()
+
+		return this
 	}
 
-	private validatePlaylist( items: Playlist ): Playlist
+	public startStream( id: string ): this
 	{
-		if ( !Array.isArray( items ) ) 
-		{
-			throw Error( `Playlist is not an array.` )
-		}
+		this.core.startStream( id )
 
-		items.forEach( ( i: PlaylistItem ): void => 
-		{
-			try 
-			{
-				new URL( i.segmentURL ).toString()
-			}
-			catch
-			{
-				throw Error( `${i.segmentURL} in playlist is invalid URL.` )
-			}
-
-			if ( !i.segmentID || typeof i.segmentID !== `string` ) 
-			{
-				throw Error( `${i.segmentID || `Missing ID`} in playlist is invalid ID.` )
-			}
-		} )
-
-		return items
+		return this
 	}
 
-	private addSlash( url: string ): string 
+	public stopStream( id: string ): this
 	{
-		return url.endsWith( `/` ) ? url : `${url}/`
+		this.core.stopStream( id )
+
+		return this
 	}
 
-	public async getSegmentURLs( stream: ChannelStream ): Promise<number>
+	public startStreamChannel( streamID: string, channelIndex: number ): this
 	{
-		const randomLocation = this.locations[ this.randomInt( 0, this.locations.length ) ]
+		this.core.startStreamChannel( streamID, channelIndex )
 
-		const path: string = stream.getPath( randomLocation )
-
-		if ( !path ) return 0
-
-		// start=random query required to hint server
-		// to return samples from a random start point
-		return await fetch( path )
-			.then( response => 
-			{
-				if ( response.status !== 200 )
-				{
-					throw Error( `Invalid response from endpoint.` )
-				}
-
-				/**
-				 * Because of redirects, the actual url we want
-				 * to store is the one that fulfilled our request,
-				 * this is why response.url is passed to this method
-				 */
-				const url = new URL( response.url )
-				
-				stream.setStaleLocation( this.addSlash( `${url.origin}${url.pathname}` ) )
-
-				return response.json()
-			} )
-			.then( ( items: Playlist ) => 
-				this.validatePlaylist( items )
-					// loop is every 3 seconds, so it should be at least 3 samples
-					.slice( 0, this.randomInt( 3, items.length ) ) )
-			.then( ( items ) => 
-			{
-				if ( items.length === 0 ) return 0
-				else return stream.addItemsFromPlaylist( items )	
-			} )
-			.catch( ( e: Error ) => 
-			{
-				this.context.onWarning( e.message )
-
-				return 0
-			} )
+		return this
 	}
 
-	public async bufferSegmentData( fetchList: string[], index: number ): Promise<void> 
+	public stopStreamChannel( streamID: string, channelIndex: number ): this
 	{
-		await this.processor?.processURLList( fetchList, index )
+		this.core.stopStreamChannel( streamID, channelIndex )
+
+		return this
 	}
 
-	public onBuffer( buffer: Float32Array, index: number ): void
+	public addLiveStream( id: string, endpoint: string ): this
 	{
-		if ( this.streams[ index ].running )
-			this.player.feed( index, buffer )
+		this.core.addLiveStream( id, endpoint )
+
+		return this
 	}
 
-	public async init(): Promise<void>
+	public addRandomStream( id: string, endpoint: string ): this
 	{
-		if ( !this.initialised )
-		{
-			this.initialised = true
+		this.core.addRandomStream( id, endpoint )
 
-			await this.player.init()
-
-			this.processor = new ListProcessor( this, this.player.sampleRate() )
-			
-			this.createStreams()
-		}
+		return this
 	}
 
-	public playChannel( index: number ): void
+	public addNormalStream( id: string, endpoint: string ): this
 	{
-		if ( !this.initialised ) return
-		
-		this.streams[ index ].start()
-	}
-
-	public stopChannel( index: number ): void
-	{
-		this.player.stopChannel( index )
-
-		this.streams[ index ].stop()
-	}
-
-	public addURL( url: URL ): this
-	{
-		try
-		{
-			const index = this.locations.length
-
-			const _url = url.toString()
-
-			this.urlLocationMap[ _url ] = index
-
-			this.locations.push( this.addSlash( _url ) )
-
-			return this
-		}
-		catch
-		{
-			throw Error( `${url} is not a valid URL.` )
-		}
-	}
-
-	public removeURL( url: URL ): this
-	{
-		const _url = url.toString()
-
-		const index = this.urlLocationMap[ _url ]
-
-		if ( index === undefined ) return this
-
-		this.locations.splice( index, 1 )
-
-		delete this.urlLocationMap[ _url ]
+		this.core.addNormalStream( id, endpoint )
 
 		return this
 	}
 
 	public stop(): this
 	{
-		this.player.stop()
-
-		for ( const stream of this.streams ) 
-		{
-			stream.stop()
-		}
+		this.core.stop()
 
 		return this
 	}
 
-	public onWarning( message: string | Error | ErrorEvent ): void 
+	public setPosition( id: string, position: number ): this
 	{
-		this.context.onWarning( message )
-	}
+		this.core.setPosition( id, position )
 
-	public onFailure( error: string | Error | ErrorEvent ): void 
-	{
-		this.context.onFailure( error )
+		return this
 	}
 }

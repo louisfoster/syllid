@@ -1,6 +1,6 @@
 {
 	"name": "syllid",
-	"version": "2.4.0",
+	"version": "3.0.0",
 	"description": "multi-channel multi-stream audio decoder and player",
 	"main": "build/syllid.js",
 	"scripts": {
@@ -44,6 +44,7 @@
 		"typescript": "^4.0.3"
 	},
 	"dependencies": {
-		"audioworklet-polyfill": "^1.1.2"
+		"audioworklet-polyfill": "^1.1.2",
+		"circular_buffer_js": "^1.0.1"
 	}
 }

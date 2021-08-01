@@ -25,6 +25,7 @@
 	},
 	"include": [
 		"index.ts",
+		"ui.ts",
 		"../build"
 	],
 	"exclude": [

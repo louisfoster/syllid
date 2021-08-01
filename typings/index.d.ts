@@ -18,7 +18,6 @@ interface PlaylistItem
     
 type Playlist = PlaylistItem[]
 
-
 interface AudioWorkletProcessor
 {
 	readonly port: MessagePort;
@@ -47,24 +46,83 @@ declare function registerProcessor(
 interface StateMessage
 {
 	type: `state`
-	state: boolean
-	channel: number
+	state: `playing` | `stopped`
+	id: string
 }
 
 interface BufferMessage
 {
 	type: `buffer`
 	buffer: Float32Array
-	channel: number
+	bufferID: string
+	id: string
 }
 
-type Message = StateMessage | BufferMessage
-
-interface ChannelData
+interface AddMessage
 {
-	state: boolean
-	currentBuffer: number
-	bufferCursor: number
-	totalBuffers: number
-	[buffer: number]: Float32Array
+	type: `add`
+	id: string
+	index: number
+}
+
+type Message =
+	| StateMessage
+	| BufferMessage
+	| AddMessage
+
+interface FeedMessage
+{
+	type: `feed`
+	streams: string[]
+}
+
+interface IDMessageItem
+{
+	sourceID: string
+	bufferID: string
+}
+
+interface IDMessage
+{
+	type: `id`
+	idList: IDMessageItem[]
+}
+
+interface EndMessage
+{
+	type: `end`
+	idList: string[]
+}
+
+type WorkletMessage = FeedMessage | IDMessage | EndMessage
+
+type Result = ReadableStreamDefaultReadResult<Uint8Array>
+
+type Reader = ReadableStreamDefaultReader<Uint8Array>
+
+/**
+ * Base class
+ * - is notified when to deliver new segments
+ * - contains a buffer quanitity to know when to fetch more segments
+ * - updates segments when buffer is low
+ * - don't overbuffer
+ */
+interface Segment
+{
+	buffer: Float32Array
+	id: string
+}
+
+interface Stream
+{
+	type: `live` | `normal` | `random`
+	nextSegments(): void
+	start(): void
+	stop(): void
+}
+
+interface Position
+{
+	id: string
+	position: number
 }

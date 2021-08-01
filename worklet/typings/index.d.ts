@@ -27,24 +27,70 @@ declare function registerProcessor(
 interface StateMessage
 {
 	type: `state`
-	state: boolean
-	channel: number
+	state: `playing` | `stopped`
+	id: string
 }
 
 interface BufferMessage
 {
 	type: `buffer`
 	buffer: Float32Array
-	channel: number
+	bufferID: string
+	id: string
 }
 
-type Message = StateMessage | BufferMessage
-
-interface ChannelData
+interface AddMessage
 {
-	state: boolean
+	type: `add`
+	id: string
+	index: number
+}
+
+type Message =
+	| StateMessage
+	| BufferMessage
+	| AddMessage
+
+interface FeedMessage
+{
+	type: `feed`
+	streams: string[]
+}
+
+interface IDMessageItem
+{
+	sourceID: string
+	bufferID: string
+}
+
+interface IDMessage
+{
+	type: `id`
+	idList: IDMessageItem[]
+}
+
+interface EndMessage
+{
+	type: `end`
+	idList: string[]
+}
+
+type WorkletMessage = FeedMessage | IDMessage | EndMessage
+
+interface BufferData
+{
+	buffer: Float32Array
+	id: string
+}
+
+interface SourceData
+{
+	id: string
+	state: `playing` | `stopped`
 	currentBuffer: number
 	bufferCursor: number
 	totalBuffers: number
-	[buffer: number]: Float32Array
+	bufferState: `new` | `stale`
+	requested: number
+	[buffer: number]: BufferData
 }

@@ -1,38 +1,44 @@
-import { ListProcessorHandler } from "./listProcessor";
-import { ChannelStream, StreamHandler } from "./channelStream";
+export interface IDMessageItem {
+    sourceID: string;
+    bufferID: string;
+}
+export interface Position {
+    id: string;
+    position: number;
+}
 export interface SyllidContextInterface {
     onWarning: (message: string | Error | ErrorEvent) => void;
     onFailure: (error: string | Error | ErrorEvent) => void;
+    onPlayingSegments: (idList: IDMessageItem[]) => void;
+    onPlaying: (id: string) => void;
+    onStopped: (id: string) => void;
+    onNoData: (id: string) => void;
+    onHasData: (id: string) => void;
+    onUnmuteChannel: (streamID: string, channelIndex: number) => void;
+    onMuteChannel: (streamID: string, channelIndex: number) => void;
+    onLengthUpdate: (id: string, length: number) => void;
+    onSegmentPositions: (id: string, positions: Position[]) => void;
+    onEndStreams: (ids: string[]) => void;
+    onSetPosition: (id: string, position: number) => void;
 }
-export declare class Syllid implements StreamHandler, ListProcessorHandler {
+export declare class Syllid {
     private context;
-    private locations;
-    private urlLocationMap;
-    private streams;
-    private player;
-    private processor?;
-    private initialised;
+    private core;
     /**
-     *
+     * Syllid Lib Interface
      * @param context Interface to the context importing this lib
      */
     constructor(context: SyllidContextInterface);
-    private bindFns;
-    private createStreams;
     getChannels(): number;
-    randomInt(from: number, to: number): number;
-    private validatePlaylist;
-    private addSlash;
-    getSegmentURLs(stream: ChannelStream): Promise<number>;
-    bufferSegmentData(fetchList: string[], index: number): Promise<void>;
-    onBuffer(buffer: Float32Array, index: number): void;
-    init(): Promise<void>;
-    playChannel(index: number): void;
-    stopChannel(index: number): void;
-    addURL(url: URL): this;
-    removeURL(url: URL): this;
+    init(): Promise<this>;
+    startStream(id: string): this;
+    stopStream(id: string): this;
+    startStreamChannel(streamID: string, channelIndex: number): this;
+    stopStreamChannel(streamID: string, channelIndex: number): this;
+    addLiveStream(id: string, endpoint: string): this;
+    addRandomStream(id: string, endpoint: string): this;
+    addNormalStream(id: string, endpoint: string): this;
     stop(): this;
-    onWarning(message: string | Error | ErrorEvent): void;
-    onFailure(error: string | Error | ErrorEvent): void;
+    setPosition(id: string, position: number): this;
 }
 //# sourceMappingURL=syllid.d.ts.map
