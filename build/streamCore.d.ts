@@ -35,7 +35,7 @@ export declare class StreamCore implements Stream {
     private noData;
     fileList: CircularBuffer<string>;
     nextID: string;
-    constructor(type: `live` | `normal` | `random`, id: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, path: PathProvider, onResponseURL: (url: string) => void, onFileListUpdated?: (() => void) | undefined);
+    constructor(type: `live` | `normal` | `random`, id: string, bufferSize: number, handler: StreamHandler, provider: StreamProvider, path: PathProvider, onResponseURL: (url: string) => void, onFileListUpdated?: ((newItems: string[]) => void) | undefined);
     private bindFns;
     /**
      * Check if new segments are available

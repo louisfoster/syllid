@@ -50,8 +50,6 @@ implements
 
 		this.stopStreamChannel = this.stopStreamChannel.bind( this )
 
-		this.stop = this.stop.bind( this )
-
 		this.addLiveStream = this.addLiveStream.bind( this )
 
 		this.addRandomStream = this.addRandomStream.bind( this )
@@ -325,7 +323,7 @@ implements
 		this.player.stopSourceChannel( streamID, channelIndex )
 	}
 
-	public stop(): this
+	public stop(): void
 	{
 		this.player.stop()
 
@@ -333,8 +331,6 @@ implements
 		{
 			this.streams[ stream ].stop()
 		}
-
-		return this
 	}
 
 	public addLiveStream( id: string, endpoint: string ): void
@@ -361,7 +357,7 @@ implements
 
 		this.init()
 
-		this.streams[ id ] = new NormalStream( id, endpoint, 10, this, this, this )
+		this.streams[ id ] = new NormalStream( id, endpoint, 5, this, this, this )
 	}
 
 	public setPosition( id: string, position: number ): void

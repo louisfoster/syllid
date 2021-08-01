@@ -5,7 +5,7 @@
       "imports": []
     },
     "streamCore.js": {
-      "bytes": 5352,
+      "bytes": 5421,
       "imports": [
         {
           "path": "web_modules/circular_buffer_js.js",
@@ -23,7 +23,7 @@
       ]
     },
     "normalStream.js": {
-      "bytes": 4989,
+      "bytes": 4863,
       "imports": [
         {
           "path": "streamCore.js",
@@ -87,7 +87,7 @@
       ]
     },
     "core.js": {
-      "bytes": 5436,
+      "bytes": 5380,
       "imports": [
         {
           "path": "liveStream.js",
@@ -133,13 +133,13 @@
           "bytesInOutput": 1969
         },
         "streamCore.js": {
-          "bytesInOutput": 3271
+          "bytesInOutput": 3305
         },
         "liveStream.js": {
           "bytesInOutput": 1152
         },
         "normalStream.js": {
-          "bytesInOutput": 3451
+          "bytesInOutput": 3338
         },
         "__snowpack__/env.js": {
           "bytesInOutput": 55
@@ -163,13 +163,13 @@
           "bytesInOutput": 2673
         },
         "core.js": {
-          "bytesInOutput": 3604
+          "bytesInOutput": 3560
         },
         "syllid.js": {
           "bytesInOutput": 687
         }
       },
-      "bytes": 234266
+      "bytes": 234143
     }
   }
 }

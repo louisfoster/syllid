@@ -15,7 +15,6 @@ export declare class NormalStream implements Stream, PathProvider {
     private position;
     private lengthURL;
     private lengthPoll;
-    private fileIndexRef;
     private segmentPosition;
     private positionSetState;
     private currentLength;

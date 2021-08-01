@@ -75,7 +75,7 @@ export declare class Core implements PlayerHandler, StreamHandler, StreamProvide
     stopStream(id: string): void;
     startStreamChannel(streamID: string, channelIndex: number): void;
     stopStreamChannel(streamID: string, channelIndex: number): void;
-    stop(): this;
+    stop(): void;
     addLiveStream(id: string, endpoint: string): void;
     addRandomStream(id: string, endpoint: string): void;
     addNormalStream(id: string, endpoint: string): void;

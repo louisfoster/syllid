@@ -25,8 +25,6 @@ export class NormalStream implements Stream, PathProvider
 
 	private lengthPoll: number
 
-	private fileIndexRef: number
-
 	private segmentPosition: Position[]
 
 	private positionSetState: PositionState
@@ -69,8 +67,6 @@ export class NormalStream implements Stream, PathProvider
 		this.currentLength = 0
 
 		this.lengthPoll = 0
-
-		this.fileIndexRef = 0
 
 		this.segmentPosition = []
 
@@ -194,7 +190,7 @@ export class NormalStream implements Stream, PathProvider
 		return _url.toString()
 	}
 
-	private updateFilePositionReference()
+	private updateFilePositionReference( items: string[] )
 	{
 		if ( this.positionSetState === PositionState.updating ) return
 
@@ -211,10 +207,10 @@ export class NormalStream implements Stream, PathProvider
 			return
 		}
 
-		for ( let i = this.fileIndexRef; i < this.core.fileList.length; i += 1 )
+		for ( let i = 0; i < items.length; i += 1 )
 		{
 			const positionItem: Position = {
-				id: this.core.fileList.at( i ),
+				id: items[ i ],
 				position: position
 			}
 
@@ -223,8 +219,6 @@ export class NormalStream implements Stream, PathProvider
 			this.segmentPosition.push( positionItem )
 
 			position += 1
-
-			this.fileIndexRef += 1
 		}
 
 		this.normalHandler.onSegmentPositions( this.id, positions )
@@ -274,8 +268,6 @@ export class NormalStream implements Stream, PathProvider
 			.then( () =>
 			{
 				this.position = position
-	
-				this.fileIndexRef = 0
 		
 				this.segmentPosition.length = 0
 

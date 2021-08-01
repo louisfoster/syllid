@@ -78,7 +78,7 @@ export class StreamCore implements Stream
 		private provider: StreamProvider,
 		private path: PathProvider,
 		private onResponseURL: ( url: string ) => void,
-		private onFileListUpdated?: () => void )
+		private onFileListUpdated?: ( newItems: string[] ) => void )
 	{
 		this.bindFns()
 
@@ -191,9 +191,13 @@ export class StreamCore implements Stream
 			() => this.checkNewSegments(),
 			Math.max( 0.5, len - 1 ) * 1000 )
 
+		const items: string[] = []
+
 		for ( let i = 0; i < len; i += 1 )
 		{
 			this.fileList.push( playlist[ i ].segmentURL )
+
+			items.push( playlist[ i ].segmentURL )
 
 			if ( i === len - 1 )
 			{
@@ -201,7 +205,7 @@ export class StreamCore implements Stream
 			}
 		}
 
-		if ( len ) this.onFileListUpdated?.()
+		if ( len ) this.onFileListUpdated?.( items )
 	}
 
 	private noUpdate()
