@@ -87,7 +87,7 @@
       ]
     },
     "core.js": {
-      "bytes": 5380,
+      "bytes": 5381,
       "imports": [
         {
           "path": "liveStream.js",
@@ -163,13 +163,13 @@
           "bytesInOutput": 2673
         },
         "core.js": {
-          "bytesInOutput": 3560
+          "bytesInOutput": 3561
         },
         "syllid.js": {
           "bytesInOutput": 687
         }
       },
-      "bytes": 234143
+      "bytes": 234144
     }
   }
 }

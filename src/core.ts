@@ -357,7 +357,7 @@ implements
 
 		this.init()
 
-		this.streams[ id ] = new NormalStream( id, endpoint, 5, this, this, this )
+		this.streams[ id ] = new NormalStream( id, endpoint, 10, this, this, this )
 	}
 
 	public setPosition( id: string, position: number ): void
