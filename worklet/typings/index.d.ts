@@ -27,7 +27,7 @@ declare function registerProcessor(
 interface StateMessage
 {
 	type: `state`
-	state: boolean
+	state: `playing` | `stopped`
 	id: string
 }
 
@@ -86,7 +86,7 @@ interface BufferData
 interface SourceData
 {
 	id: string
-	state: boolean
+	state: `playing` | `stopped`
 	currentBuffer: number
 	bufferCursor: number
 	totalBuffers: number

@@ -21,7 +21,7 @@ export declare class Player {
     private worklet?;
     /**
      * Each output channel has a connector
-     * A connector has a n inputs.
+     * A connector has n inputs.
      * A connector connects to the output merger.
      */
     private connectors;

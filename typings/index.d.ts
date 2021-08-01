@@ -46,7 +46,7 @@ declare function registerProcessor(
 interface StateMessage
 {
 	type: `state`
-	state: boolean
+	state: `playing` | `stopped`
 	id: string
 }
 

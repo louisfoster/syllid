@@ -1,23 +1,6 @@
 import worker from "./playerWorklet"
 import "audioworklet-polyfill"
 
-/**
- * Single worker node
- * Worker receives data for
- * - channel playing state
- * - buffers for channel
- * 
- * When channel is stopped, just copy 0s
- * When channel playing but buffer is empty, just copy almost silent randoms
- * When channel is playing and buffer is available
- * - get current buffer file
- * - get current buffer index
- * - get next non 0 value
- * - if new buffer file, fade in values
- * - if end of buffer (sequence of 0 values > 10), fade out values
- * - copy values to output for channel
- */
-
 enum MessageType
 {
 	state = `state`,
@@ -35,7 +18,6 @@ enum ChannelState
 enum SourceState
 {
 	inactive,
-	// buffering,
 	active
 }
 
@@ -44,6 +26,12 @@ enum WorkletMessageType
 	feed = `feed`,
 	id = `id`,
 	end = `end`
+}
+
+enum PlayingState
+{
+	stopped = `stopped`,
+	playing = `playing`
 }
 
 interface SourceData
@@ -94,7 +82,7 @@ export class Player
 
 	/**
 	 * Each output channel has a connector
-	 * A connector has a n inputs.
+	 * A connector has n inputs.
 	 * A connector connects to the output merger.
 	 */
 	private connectors: Connector[]
@@ -205,7 +193,7 @@ export class Player
 		}
 	}
 
-	private stateMessage( id: string, state: boolean ): StateMessage
+	private stateMessage( id: string, state: PlayingState ): StateMessage
 	{
 		return {
 			id,
@@ -371,7 +359,7 @@ export class Player
 		// send active state message
 		this.sources[ id ].state = SourceState.active
 
-		this.worklet?.port.postMessage( this.stateMessage( id, true ) )
+		this.worklet?.port.postMessage( this.stateMessage( id, PlayingState.playing ) )
 
 		this.handler.onStartSource( id )
 	}
@@ -396,7 +384,7 @@ export class Player
 		// send inactive state message
 		setTimeout( () => 
 		{
-			this.worklet?.port.postMessage( this.stateMessage( sourceID, false ) )
+			this.worklet?.port.postMessage( this.stateMessage( sourceID, PlayingState.stopped ) )
 
 			if ( activeChannel ) this.handler.onStopSource( sourceID )
 		}, 1000 )

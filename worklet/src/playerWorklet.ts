@@ -1,25 +1,3 @@
-/**
- * Single worker node
- * Worker receives data for
- * - channel playing state
- * - buffers for channel
- * 
- * When channel is stopped, just copy 0s
- * When channel playing but buffer is empty, just copy almost silent randoms
- * When channel is playing and buffer is available
- * - get current buffer file
- * - get current buffer index
- * - get next non 0 value
- * - if new buffer file, fade in values
- * - if end of buffer (sequence of 0 values > 10), fade out values
- * - copy values to output for channel
- * 
- * TODO:
- * - send request for segments
- * - emit current playing segments
- * 
- */
-
 enum MessageType
 {
 	state = `state`,
@@ -38,6 +16,12 @@ enum BufferState
 {
 	new = `new`,
 	stale = `stale`
+}
+
+enum PlayingState
+{
+	stopped = `stopped`,
+	playing = `playing`
 }
 
 class PlayerWorklet extends AudioWorkletProcessor
@@ -94,6 +78,8 @@ class PlayerWorklet extends AudioWorkletProcessor
 		this.process = this.process.bind( this )
 
 		this.onEndProcess = this.onEndProcess.bind( this )
+
+		this.isPlaying = this.isPlaying.bind( this )
 	}
 
 	private newStreamItem( id: string ): SourceData
@@ -102,7 +88,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 			id,
 			bufferCursor: 0,
 			currentBuffer: 0,
-			state: false,
+			state: PlayingState.stopped,
 			requested: 0,
 			totalBuffers: 0,
 			bufferState: BufferState.new
@@ -134,7 +120,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 		if ( data.type !== MessageType.state ) return
 
 		// Invalid data
-		if ( typeof data.state !== `boolean` || typeof data.id !== `string` ) return
+		if ( typeof data.state !== `string` || typeof data.id !== `string` ) return
 		
 		// No relevant stream
 		const index = this.sourceKey[ data.id ]
@@ -186,12 +172,19 @@ class PlayerWorklet extends AudioWorkletProcessor
 		return number
 	}
 
+	private isPlaying( sourceIndex: number )
+	{
+		return this.sources[ sourceIndex ].state === PlayingState.playing
+	}
+
 	// Clean up tasks
 	private onEndProcess()
 	{
+		// Emit IDs of buffers that commenced during this epoch
 		if ( this.playingBuffer.length > 0 )
 			this.port.postMessage( this.emitBufferIDs( this.playingBuffer ) )
 
+		// Emit IDs of sources that have no more data after this epoch
 		if ( this.endBuffer.length > 0 )
 			this.port.postMessage( this.emitEndIDs( this.endBuffer ) )
 
@@ -201,28 +194,32 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 		for ( let i = 0; i < this.sources.length; i += 1 ) 
 		{
-			if ( !this.sources[ i ].state && this.sources[ i ].totalBuffers > 0 )
+			// this is here so anything buffering can finish before being cleared
+			if ( !this.isPlaying( i ) && this.sources[ i ].totalBuffers > 0 )
 			{
 				// Reset channel if stopped
-				// this is here so anything buffering can finish before being cleared
 				this.sources[ i ] = this.newStreamItem( this.sources[ i ].id )
 			}
 
-			if ( 
-				this.sources[ i ].state
-				&& !this.sources[ i ].requested 
-				&& ( this.sources[ i ].totalBuffers - this.sources[ i ].currentBuffer ) < 4 )
+			const buffersRemaining = this.sources[ i ].totalBuffers - this.sources[ i ].currentBuffer
+
+			const timeElapsed = now - this.sources[ i ].requested
+
+			const hasRequestedMoreBuffers = !!this.sources[ i ].requested
+
+			if ( this.isPlaying( i ) && !hasRequestedMoreBuffers && buffersRemaining < 4 )
 			{
 				this.sources[ i ].requested = now
 
 				this.requestBuffer.push( this.sources[ i ].id )
 			}
-			else if ( this.sources[ i ].requested && now - this.sources[ i ].requested > 1000 )
+			else if ( hasRequestedMoreBuffers && timeElapsed > 1000 )
 			{
 				this.sources[ i ].requested = 0
 			}
 		}
 
+		// Emit source IDs that require more buffer data
 		if ( this.requestBuffer.length > 0 )
 			this.port.postMessage( this.emitFeedRequest( this.requestBuffer ) )
 	}
@@ -268,7 +265,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 			{		
 				const source = this.sources[ s ]
 
-				if ( !source || !source.state ) continue
+				if ( !source || !this.isPlaying( s ) ) continue
 
 				const output = outputs[ s ]
 
@@ -276,7 +273,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 				const channelBuffer = output[ 0 ]
 
-				if ( !source.state // not playing
+				if ( !this.isPlaying( s ) // not playing
 					|| !source.totalBuffers // no buffers
 					|| !source[ source.currentBuffer ] // no current buffer
 				)
@@ -288,7 +285,9 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 				for ( let dataIndex = 0; dataIndex < channelBuffer.length; dataIndex += 1 ) 
 				{
-					if ( !source.state || !source.totalBuffers || !source[ source.currentBuffer ] )
+					// this is here in case state changes, buffer is cleared, 
+					// or no more new buffers in the midst of copying data
+					if ( !this.isPlaying( s ) || !source.totalBuffers || !source[ source.currentBuffer ] )
 					{
 						channelBuffer.fill( 0, dataIndex )
 
