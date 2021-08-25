@@ -195,7 +195,7 @@ export class NormalStream implements Stream, PathProvider
 		if ( this.positionSetState === PositionState.updating ) return
 
 		let position = this.segmentPosition.length > 0
-			? this.segmentPosition[ this.segmentPosition.length - 1 ].position
+			? this.segmentPosition[ this.segmentPosition.length - 1 ].position + 1
 			: this.position
 
 		const positions: Position[] = []
