@@ -5,7 +5,7 @@
       "imports": []
     },
     "streamCore.js": {
-      "bytes": 5421,
+      "bytes": 5435,
       "imports": [
         {
           "path": "web_modules/circular_buffer_js.js",
@@ -133,7 +133,7 @@
           "bytesInOutput": 1969
         },
         "streamCore.js": {
-          "bytesInOutput": 3305
+          "bytesInOutput": 3319
         },
         "liveStream.js": {
           "bytesInOutput": 1152
@@ -169,7 +169,7 @@
           "bytesInOutput": 687
         }
       },
-      "bytes": 234400
+      "bytes": 234414
     }
   }
 }

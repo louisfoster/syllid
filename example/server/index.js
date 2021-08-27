@@ -86,6 +86,8 @@ const lengthReq = (req, res) =>
 	res.json({length: data[num].urls.length})
 }
 
+let latestReqCount = 0
+
 const app = express()
 
 app.use(express.static('example'))
@@ -110,7 +112,16 @@ app.get('/playlist/:num', (req, res) =>
 	if (req.query.start === `random`)
 		res.json(fromID(num, data[num].ids[Math.floor(Math.random() * data[num].ids.length)]))
 	else if (req.query.start === `latest`)
+	{
+		if (latestReqCount < 5)
+		{
+			latestReqCount += 1
+			res.json([])
+			return
+		}
 		res.json(data[num].urls.slice(data[num].urls.length - 5))
+	}
+		
 	else if (req.query.start === `position`)
 	{
 		const pos = parseInt(req.query.position)
