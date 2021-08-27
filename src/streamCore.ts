@@ -172,6 +172,8 @@ export class StreamCore implements Stream
 		if ( playlist.length === 0 )
 		{
 			this.noUpdate()
+
+			return
 		}
 		else
 		{
