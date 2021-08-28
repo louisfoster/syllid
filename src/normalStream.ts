@@ -290,7 +290,7 @@ export class NormalStream implements Stream, PathProvider
 					this.positionSetState = PositionState.done
 
 					this.normalHandler.onSetPosition( this.id, position )
-				}, 1000 )
+				}, 100 )
 			} )
 	}
 }

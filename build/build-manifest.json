@@ -44,7 +44,7 @@
       "imports": []
     },
     "player.js": {
-      "bytes": 7556,
+      "bytes": 7482,
       "imports": [
         {
           "path": "__snowpack__/env.js",
@@ -151,7 +151,7 @@
           "bytesInOutput": 2254
         },
         "player.js": {
-          "bytesInOutput": 4611
+          "bytesInOutput": 4569
         },
         "randomStream.js": {
           "bytesInOutput": 1710
@@ -169,7 +169,7 @@
           "bytesInOutput": 687
         }
       },
-      "bytes": 234414
+      "bytes": 234372
     }
   }
 }

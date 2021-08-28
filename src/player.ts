@@ -387,7 +387,7 @@ export class Player
 			this.worklet?.port.postMessage( this.stateMessage( sourceID, PlayingState.stopped ) )
 
 			if ( activeChannel ) this.handler.onStopSource( sourceID )
-		}, 1000 )
+		}, 100 )
 	}
 
 	public startSourceChannel( sourceID: string, channel: number ): void
@@ -402,14 +402,11 @@ export class Player
 		this.sources[ sourceID ].channels[ channel ] = ChannelState.active
 
 		this.connectors[ channel ].inputs[ this.sources[ sourceID ].index ].gain.linearRampToValueAtTime(
-			1.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+			1.0, ( this.ctx?.currentTime ?? 0 ) + 0.2 )
 
 		this.handler.onStartSourceChannel( sourceID, channel )
 
-		setTimeout( () => 
-		{
-			this.connectors[ channel ].count += 1
-		}, 1000 )
+		this.connectors[ channel ].count += 1
 	}
 
 	public stopSourceChannel( sourceID: string, channel: number, onActive?: () => void ): void
@@ -423,14 +420,11 @@ export class Player
 		this.sources[ sourceID ].channels[ channel ] = ChannelState.muted
 
 		this.connectors[ channel ].inputs[ this.sources[ sourceID ].index ].gain.linearRampToValueAtTime(
-			0.0, ( this.ctx?.currentTime ?? 0 ) + 1 )
+			0.0, ( this.ctx?.currentTime ?? 0 ) + 0.2 )
 
-		setTimeout( () => 
-		{
-			this.connectors[ channel ].count -= 1
+		this.connectors[ channel ].count -= 1
 
-			this.handler.onStopSourceChannel( sourceID, channel )
-		}, 1000 )
+		this.handler.onStopSourceChannel( sourceID, channel )
 	}
 
 	public sampleRate(): number
