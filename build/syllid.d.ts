@@ -10,6 +10,7 @@ export interface SyllidContextInterface {
     onWarning: (message: string | Error | ErrorEvent) => void;
     onFailure: (error: string | Error | ErrorEvent) => void;
     onPlayingSegments: (idList: IDMessageItem[]) => void;
+    onBuffering: (id: string) => void;
     onPlaying: (id: string) => void;
     onStopped: (id: string) => void;
     onNoData: (id: string) => void;

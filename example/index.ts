@@ -167,6 +167,11 @@ class App implements SyllidContextInterface
 		}
 	}
 
+	public onBuffering(): void
+	{
+		// not handled
+	}
+
 	public onPlaying( id: string ): void
 	{
 		this.ui[ id ].setPlaying()

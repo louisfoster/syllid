@@ -74,7 +74,8 @@ export class WorkerPool
 		worker.postMessage( { 
 			command: `init`,
 			decoderSampleRate: 48000,
-			outputBufferSampleRate: this.sampleRate
+			outputBufferSampleRate: this.sampleRate,
+			resampleQuality: 10
 		} )
 
 		return {
@@ -128,31 +129,54 @@ export class WorkerPool
 
 	private buildBuffer( index: number ): Float32Array
 	{
-		const firstPage = this.workers[ index ].bufferPages[ 0 ]
-
-		const lastPage = this.workers[ index ].bufferPages[ this.workers[ index ].pageCount - 1 ]
-
-		const offsetStart = this.getIndex( firstPage, `start` )
-
-		const offsetEnd = this.getIndex( lastPage, `end` )
-
-		const reduceEnd = lastPage.length - 1 - offsetEnd
-
-		const buffer = new Float32Array( this.workers[ index ].bufferLength - offsetStart - reduceEnd )
+		const buffer = new Float32Array( this.sampleRate * 1.01 )
 
 		let offset = 0
 
+		const pad = this.sampleRate * 0.07
+
+		let incr = 0
+
 		for( let i = 0; i < this.workers[ index ].pageCount; i += 1 )
 		{
-			const page = i === 0
-				? firstPage.subarray( offsetStart )
-				: i === this.workers[ index ].pageCount - 1
-					? lastPage.subarray( 0, offsetEnd + 1 )
-					: this.workers[ index ].bufferPages[ i ]
+			const page = this.workers[ index ].bufferPages[ i ]
 
-			buffer.set( page, offset )
+			if ( incr < pad )
+			{
+				// length of current page
+				const len = page.length
 
-			offset += page.length
+				// rem of pad to skip
+				const rem = pad - incr
+
+				// if len is less than pad - incr, add to incr and continue
+				if ( len <= rem )
+				{
+					incr += len
+
+					continue
+				}
+
+				buffer.set( page.subarray( rem ) )
+
+				incr = pad
+
+				offset += ( len - rem )
+			}
+			else
+			{
+				const rem = buffer.length - offset
+
+				const p = page.length > rem
+					? page.subarray( 0, rem )
+					: page
+
+				buffer.set( p, offset )
+
+				offset += p.length
+			}
+
+			if ( offset >= buffer.length ) break
 		}
 
 		this.fadeBuffer( buffer )
@@ -161,9 +185,43 @@ export class WorkerPool
 	}
 
 	/**
+	 * method used for testing purposes
+	 * analyse data using program like audacity
+	 * float32, little-endian, 1 channel, (sample rate of output)
+	private download( buffer: ArrayBuffer )
+	{
+		const saveByteArray = ( function () 
+		{
+			const a = document.createElement( `a` )
+
+			document.body.appendChild( a )
+
+			a.style.display = `none`
+
+			return ( data: BlobPart[], name: string ) => 
+			{
+				const blob = new Blob( data, { type: `octet/stream` } ),
+					url = window.URL.createObjectURL( blob )
+
+				a.href = url
+
+				a.download = name
+
+				a.click()
+
+				window.URL.revokeObjectURL( url )
+			}
+		}() )
+
+		saveByteArray( [ buffer ], `${~~( Math.random() * 10000000 )}` )
+	}
+	*/
+
+	/**
 	 * Decoded data often has a bunch of 0s at the start and end,
 	 * this finds the first index of non-0s or last index before 0s
 	 */
+	/*
 	private getIndex( buffer: Float32Array, direction: `start` | `end` ): number
 	{
 		let seqCount = 0
@@ -196,26 +254,29 @@ export class WorkerPool
 
 		return seqStart
 	}
+	*/
 
 	/**
 	 * To prevent popping between uneven buffers, add a tiny fade in
 	 * at the beginning and fade out at the end
 	 */
+	
 	private fadeBuffer( buffer: Float32Array )
 	{
-		const milli = 2000
+		const samples = this.sampleRate * 0.01
 
-		for( let i = 0; i < milli; i += 1 )
+		for( let i = 0; i < samples; i += 1 )
 		{
 			// FADE IN
-			buffer[ i ] = ( buffer[ i ] * i / milli )
+			buffer[ i ] = ( buffer[ i ] * i / samples )
 
 			// FADE OUT
 			const j = buffer.length - 1 - i
 
-			buffer[ j ] = buffer[ j ] - ( buffer[ j ] * ( milli - i ) / milli )
+			buffer[ j ] = buffer[ j ] - ( buffer[ j ] * ( samples - i ) / samples )
 		}
 	}
+	
 
 	public getWorker(): string | undefined
 	{

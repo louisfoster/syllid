@@ -24,7 +24,7 @@ enum PlayingState
 	playing = `playing`
 }
 
-class PlayerWorklet extends AudioWorkletProcessor
+export class PlayerWorklet extends AudioWorkletProcessor
 {
 	private handlers: Record<MessageType, ( data: Message ) => void>
 
@@ -253,7 +253,7 @@ class PlayerWorklet extends AudioWorkletProcessor
 	 * - First dimension is an output in a list of outputs, in this case, just 1
 	 * - Second dimension is channels for the output, in this case, equal to destination channels
 	 */
-	process( _: Float32Array[][], outputs: Float32Array[][] ) 
+	process( _: Float32Array[][], outputs: Float32Array[][] ): boolean
 	{
 		try
 		{
@@ -308,11 +308,13 @@ class PlayerWorklet extends AudioWorkletProcessor
 
 					let faded = false
 
-					// If we are < 2000 from end of buffer, add beginning of new buffer
-					if ( source.bufferCursor > source[ source.currentBuffer ].buffer.length - 2000
+					const bufferFade = sampleRate * 0.01
+
+					// If we are <= 0.1ms from end of buffer, add beginning of new buffer
+					if ( source.bufferCursor > source[ source.currentBuffer ].buffer.length - bufferFade
 						&& source[ source.currentBuffer + 1 ] )
 					{
-						const i = 2000 - ( source[ source.currentBuffer ].buffer.length - source.bufferCursor )
+						const i = bufferFade - ( source[ source.currentBuffer ].buffer.length - source.bufferCursor )
 
 						channelBuffer[ dataIndex ] += source[ source.currentBuffer + 1 ].buffer[ i ]
 
@@ -327,7 +329,9 @@ class PlayerWorklet extends AudioWorkletProcessor
 						// Delete used buffer
 						delete source[ source.currentBuffer ]
 
-						source.bufferCursor = faded ? 2000 : 0
+						source.bufferCursor = faded ? bufferFade : 0
+
+						// source.bufferCursor = 0
 
 						source.currentBuffer += 1
 

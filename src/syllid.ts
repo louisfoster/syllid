@@ -20,6 +20,8 @@ export interface SyllidContextInterface
 
 	onPlayingSegments: ( idList: IDMessageItem[] ) => void
 
+	onBuffering: ( id: string ) => void
+
 	onPlaying: ( id: string ) => void
 
 	onStopped: ( id: string ) => void

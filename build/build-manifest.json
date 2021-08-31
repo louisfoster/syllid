@@ -5,7 +5,7 @@
       "imports": []
     },
     "streamCore.js": {
-      "bytes": 5435,
+      "bytes": 5704,
       "imports": [
         {
           "path": "web_modules/circular_buffer_js.js",
@@ -36,7 +36,7 @@
       "imports": []
     },
     "playerWorklet.js": {
-      "bytes": 3963,
+      "bytes": 4001,
       "imports": []
     },
     "web_modules/audioworklet-polyfill.js": {
@@ -74,7 +74,7 @@
       "imports": []
     },
     "workerPool.js": {
-      "bytes": 4830,
+      "bytes": 4434,
       "imports": [
         {
           "path": "__snowpack__/env.js",
@@ -87,7 +87,7 @@
       ]
     },
     "core.js": {
-      "bytes": 5381,
+      "bytes": 5445,
       "imports": [
         {
           "path": "liveStream.js",
@@ -133,7 +133,7 @@
           "bytesInOutput": 1969
         },
         "streamCore.js": {
-          "bytesInOutput": 3319
+          "bytesInOutput": 3505
         },
         "liveStream.js": {
           "bytesInOutput": 1152
@@ -145,7 +145,7 @@
           "bytesInOutput": 55
         },
         "playerWorklet.js": {
-          "bytesInOutput": 3934
+          "bytesInOutput": 3972
         },
         "web_modules/audioworklet-polyfill.js": {
           "bytesInOutput": 2254
@@ -160,16 +160,16 @@
           "bytesInOutput": 205150
         },
         "workerPool.js": {
-          "bytesInOutput": 2673
+          "bytesInOutput": 2483
         },
         "core.js": {
-          "bytesInOutput": 3561
+          "bytesInOutput": 3610
         },
         "syllid.js": {
           "bytesInOutput": 687
         }
       },
-      "bytes": 234372
+      "bytes": 234455
     }
   }
 }

@@ -1,5 +1,7 @@
 declare module 'audioworklet-polyfill'
 
+declare const sampleRate: number
+
 interface AudioWorkletProcessor
 {
 	readonly port: MessagePort;

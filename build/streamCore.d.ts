@@ -7,6 +7,7 @@ export interface StreamHandler {
     hasData: (id: string) => void;
     onStreamStart: (id: string) => void;
     onStreamStop: (id: string) => void;
+    onStreamBuffering: (id: string) => void;
 }
 export interface StreamProvider {
     validatePlaylistResponse: (items: Playlist) => Playlist;
@@ -64,6 +65,7 @@ export declare class StreamCore implements Stream {
      */
     private getBuffer;
     private evalChunk;
+    private checkBuffering;
     nextSegments(): void;
     start(): void;
     stop(): void;

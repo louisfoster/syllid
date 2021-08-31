@@ -47,6 +47,7 @@ export declare class Core implements PlayerHandler, StreamHandler, StreamProvide
      *
      */
     handleSegment(streamID: string, data: Float32Array, segmentID: string): void;
+    onStreamBuffering(id: string): void;
     onStreamStart(id: string): void;
     onStreamStop(id: string): void;
     onWarning(message: string | Error | ErrorEvent): void;

@@ -2,40 +2,6 @@ const express = require( `express` )
 
 const PORT = 5558
 
-// counting
-const ids = [
-	`0000001`,
-	`0000002`,
-	`0000003`,
-	`0000004`,
-	`0000005`,
-	`0000006`,
-	`0000007`,
-	`0000008`,
-	`0000009`,
-	`0000010`,
-	`0000011`,
-	`0000012`,
-	`0000013`,
-	`0000014`,
-	`0000015`,
-	`0000016`,
-]
-
-const mapped = ids.reduce((obj, curr, i) => ({...obj, [curr]: i}), {})
-
-// humming
-const ids2 = [
-	`0000001`,
-	`0000002`,
-	`0000003`,
-	`0000004`,
-	`0000005`,
-	`0000006`,
-	`0000007`,
-]
-
-const mapped2 = ids2.reduce((obj, curr, i) => ({...obj, [curr]: i}), {})
 
 const toData = (index, segmentID) =>
 ({
@@ -44,20 +10,21 @@ const toData = (index, segmentID) =>
 	segmentURL: `http://localhost:${PORT}/audio/${index}/${segmentID}.opus`
 })
 
-const data = [
-	{
+const getdata = (count, index) => {
+	const ids = Array(count).fill(undefined).map((_,i) => `${i + 1}`.padStart(7, `0`))
+	
+	const mapped = ids.reduce((obj, curr, i) => ({...obj, [curr]: i}), {})
+
+	return {
 		ids,
 		mapped,
-		index: 0,
-		urls: ids.map(id => toData(0, id))
-	},
-	{
-		ids: ids2,
-		mapped: mapped2,
-		index: 1,
-		urls: ids2.map(id => toData(1, id))
+		index,
+		urls: ids.map(id => toData(index, id))
 	}
-]
+}
+
+
+const data = [16, 7, 10, 10].map(getdata)
 
 // Use this to store numbers that are being tested for normal
 // playback, note these numbers can't be tested with

@@ -5,7 +5,7 @@
   "main": "playerWorklet.js",
   "scripts": {
     "build": "npm run snowpack:build && node convert.js",
-		"snowpack:build": "../node_modules/.bin/snowpack build"
+    "snowpack:build": "../node_modules/.bin/snowpack build"
   },
   "keywords": [],
   "author": "",

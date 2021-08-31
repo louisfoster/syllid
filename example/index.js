@@ -97,6 +97,9 @@ class App {
             this.ui[sourceID].setSegmentPlaying(bufferID, this.positions[sourceID]?.[bufferID]);
         }
     }
+    onBuffering() {
+        // not handled
+    }
     onPlaying(id) {
         this.ui[id].setPlaying();
     }

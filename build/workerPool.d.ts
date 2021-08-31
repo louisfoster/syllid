@@ -16,10 +16,41 @@ export declare class WorkerPool {
     private reset;
     private buildBuffer;
     /**
+     * method used for testing purposes
+     * analyse data using program like audacity
+     * float32, little-endian, 1 channel, (sample rate of output)
+    private download( buffer: ArrayBuffer )
+    {
+        const saveByteArray = ( function ()
+        {
+            const a = document.createElement( `a` )
+
+            document.body.appendChild( a )
+
+            a.style.display = `none`
+
+            return ( data: BlobPart[], name: string ) =>
+            {
+                const blob = new Blob( data, { type: `octet/stream` } ),
+                    url = window.URL.createObjectURL( blob )
+
+                a.href = url
+
+                a.download = name
+
+                a.click()
+
+                window.URL.revokeObjectURL( url )
+            }
+        }() )
+
+        saveByteArray( [ buffer ], `${~~( Math.random() * 10000000 )}` )
+    }
+    */
+    /**
      * Decoded data often has a bunch of 0s at the start and end,
      * this finds the first index of non-0s or last index before 0s
      */
-    private getIndex;
     /**
      * To prevent popping between uneven buffers, add a tiny fade in
      * at the beginning and fade out at the end

@@ -218,6 +218,11 @@ implements
 		this.player.feed( streamID, segmentID, data )
 	}
 
+	public onStreamBuffering( id: string ): void
+	{
+		this.context.onBuffering( id )
+	}
+
 	public onStreamStart( id: string ): void
 	{
 		this.player.startSource( id )

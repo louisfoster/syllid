@@ -2,8 +2,9 @@ import { circular_buffer as CircularBuffer } from "circular_buffer_js"
 
 enum State
 {
-	stopped,
-	running
+	stopped = `stopped`,
+	running = `running`,
+	buffering = `buffering`
 }
 
 export interface StreamHandler
@@ -21,6 +22,8 @@ export interface StreamHandler
 	onStreamStart: ( id: string ) => void
 
 	onStreamStop: ( id: string ) => void
+
+	onStreamBuffering: ( id: string ) => void
 }
 
 export interface StreamProvider
@@ -249,6 +252,8 @@ export class StreamCore implements Stream
 			if ( !url ) break
 
 			await this.getBuffer( url )
+
+			this.checkBuffering()
 		}
 
 		this.updateLock = false
@@ -327,6 +332,15 @@ export class StreamCore implements Stream
 		return reader.read().then( res => this.evalChunk( reader, res, totalSize, chunks ) )
 	}
 
+	private checkBuffering()
+	{
+		if ( this.state !== State.buffering || this.segments.length < 3 ) return
+
+		this.state = State.buffering
+
+		this.handler.onStreamStart( this.id )
+	}
+
 	public nextSegments(): void
 	{
 		if ( this.nextLock )
@@ -359,13 +373,11 @@ export class StreamCore implements Stream
 
 	public start(): void
 	{
-		if ( this.state === State.running ) return
+		if ( this.state !== State.stopped ) return
 
-		this.state = State.running
+		this.state = State.buffering
 
 		this.checkNewSegments()
-
-		this.handler.onStreamStart( this.id )
 	}
 
 	public stop(): void
@@ -383,7 +395,7 @@ export class StreamCore implements Stream
 	{
 		return new Promise( resolve => 
 		{
-			const isRunning = this.state === State.running
+			const isRunning = this.state !== State.running
 	
 			if ( isRunning ) this.stop()
 	
