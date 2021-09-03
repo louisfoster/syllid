@@ -32,6 +32,8 @@ export class WorkerPool
 
 	private idMap: Record<string, number | undefined>
 
+	private bufferCount: number
+
 	constructor(
 		private workerCount: number,
 		private handler: WorkerPoolHandler,
@@ -46,6 +48,8 @@ export class WorkerPool
 		this.workers = []
 
 		this.idMap = {}
+
+		this.bufferCount = 0
 
 		for ( let w = 0; w < this.workerCount; w += 1 )
 		{
@@ -181,6 +185,8 @@ export class WorkerPool
 
 		this.fadeBuffer( buffer )
 
+		// this.download( buffer )
+
 		return buffer
 	}
 
@@ -188,6 +194,7 @@ export class WorkerPool
 	 * method used for testing purposes
 	 * analyse data using program like audacity
 	 * float32, little-endian, 1 channel, (sample rate of output)
+	 * */
 	private download( buffer: ArrayBuffer )
 	{
 		const saveByteArray = ( function () 
@@ -213,9 +220,9 @@ export class WorkerPool
 			}
 		}() )
 
-		saveByteArray( [ buffer ], `${~~( Math.random() * 10000000 )}` )
+		saveByteArray( [ buffer ], `${this.bufferCount++}`.padStart( 4, `0` ) )
 	}
-	*/
+	
 
 	/**
 	 * Decoded data often has a bunch of 0s at the start and end,

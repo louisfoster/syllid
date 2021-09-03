@@ -74,7 +74,7 @@
       "imports": []
     },
     "workerPool.js": {
-      "bytes": 4434,
+      "bytes": 4967,
       "imports": [
         {
           "path": "__snowpack__/env.js",
@@ -160,7 +160,7 @@
           "bytesInOutput": 205150
         },
         "workerPool.js": {
-          "bytesInOutput": 2483
+          "bytesInOutput": 2811
         },
         "core.js": {
           "bytesInOutput": 3610
@@ -169,7 +169,7 @@
           "bytesInOutput": 687
         }
       },
-      "bytes": 234455
+      "bytes": 234783
     }
   }
 }

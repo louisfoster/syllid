@@ -24,7 +24,7 @@ const getdata = (count, index) => {
 }
 
 
-const data = [16, 7, 10, 10].map(getdata)
+const data = [16, 7, 10, 10, 36].map(getdata)
 
 // Use this to store numbers that are being tested for normal
 // playback, note these numbers can't be tested with

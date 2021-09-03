@@ -262,7 +262,7 @@ export class UI
 
 	private toInterval( value: number )
 	{
-		return `${`${Math.round( value )}`.padStart( 2, `0` )}`
+		return `${`${Math.floor( value )}`.padStart( 2, `0` )}`
 	}
 
 	public setSegmentPlaying( segmentID: string, position?: number ): void
