@@ -32,8 +32,6 @@ export class WorkerPool
 
 	private idMap: Record<string, number | undefined>
 
-	// private bufferCount: number
-
 	constructor(
 		private workerCount: number,
 		private handler: WorkerPoolHandler,
@@ -48,8 +46,6 @@ export class WorkerPool
 		this.workers = []
 
 		this.idMap = {}
-
-		// this.bufferCount = 0
 
 		for ( let w = 0; w < this.workerCount; w += 1 )
 		{
@@ -185,8 +181,6 @@ export class WorkerPool
 
 		const outBuffer = this.zeroCross( buffer )
 
-		// this.download( outBuffer, `zerocross` )
-
 		return outBuffer
 	}
 
@@ -247,97 +241,6 @@ export class WorkerPool
 
 		return buffer.subarray( s, e )
 	}
-
-	/**
-	 * method used for testing purposes
-	 * analyse data using program like audacity
-	 * float32, little-endian, 1 channel, (sample rate of output)
-	 * */
-	/*
-	private download( buffer: ArrayBuffer, prefix = `` )
-	{
-		const a = document.createElement( `a` )
-
-		document.body.appendChild( a )
-
-		a.style.display = `none`
-
-		const blob = new Blob( [ buffer ], { type: `octet/stream` } ),
-			url = window.URL.createObjectURL( blob )
-
-		a.href = url
-
-		a.download =`${prefix}-${this.bufferCount++}`.padStart( 4, `0` )
-
-		a.click()
-
-		window.URL.revokeObjectURL( url )
-	}
-	*/
-	
-
-	/**
-	 * Decoded data often has a bunch of 0s at the start and end,
-	 * this finds the first index of non-0s or last index before 0s
-	 */
-	/*
-	private getIndex( buffer: Float32Array, direction: `start` | `end` ): number
-	{
-		let seqCount = 0
-
-		let seqStart = -1
-
-		for ( let i = 0; i < buffer.length; i += 1 )
-		{
-			const index = direction === `start` ? i : buffer.length - 1 - i
-
-			if ( buffer[ index ] === 0 )
-			{
-				seqCount = 0
-
-				seqStart = -1
-
-				continue
-			}
-			else if ( seqCount === 9 )
-			{
-				break
-			}
-			else
-			{
-				seqCount += 1
-
-				seqStart = seqStart === -1 ? index : seqStart
-			}
-		}
-
-		return seqStart
-	}
-	*/
-
-	/**
-	 * To prevent popping between uneven buffers, add a tiny fade in
-	 * at the beginning and fade out at the end
-	 */
-	
-	/*
-	private fadeBuffer( buffer: Float32Array )
-	{
-		const samples = this.sampleRate * 0.01
-
-		for( let i = 0; i < samples; i += 1 )
-		{
-			// FADE IN
-			buffer[ i ] = ( buffer[ i ] * i / samples )
-
-			// FADE OUT
-			const j = buffer.length - 1 - i
-
-			buffer[ j ] = buffer[ j ] - ( buffer[ j ] * ( samples - i ) / samples )
-		}
-	}
-	*/
-	
 
 	public getWorker(): string | undefined
 	{

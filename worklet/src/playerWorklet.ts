@@ -306,22 +306,7 @@ export class PlayerWorklet extends AudioWorkletProcessor
 					}
 
 					channelBuffer[ dataIndex ] = source[ source.currentBuffer ].buffer[ source.bufferCursor ]
-
-					// let faded = false
-
-					// const bufferFade = sampleRate * 0.01
-
-					// If we are <= 0.1ms from end of buffer, add beginning of new buffer
-					// if ( source.bufferCursor > source[ source.currentBuffer ].buffer.length - bufferFade
-					// 	&& source[ source.currentBuffer + 1 ] )
-					// {
-					// 	const i = bufferFade - ( source[ source.currentBuffer ].buffer.length - source.bufferCursor )
-
-					// 	channelBuffer[ dataIndex ] += source[ source.currentBuffer + 1 ].buffer[ i ]
-
-					// 	faded = true
-					// }
-
+	
 					source.bufferCursor += 1
 
 					// Reached end of buffer
@@ -329,8 +314,6 @@ export class PlayerWorklet extends AudioWorkletProcessor
 					{
 						// Delete used buffer
 						delete source[ source.currentBuffer ]
-
-						// source.bufferCursor = faded ? bufferFade : 0
 
 						source.bufferCursor = 0
 
