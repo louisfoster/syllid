@@ -32,7 +32,7 @@ export class WorkerPool
 
 	private idMap: Record<string, number | undefined>
 
-	private bufferCount: number
+	// private bufferCount: number
 
 	constructor(
 		private workerCount: number,
@@ -49,7 +49,7 @@ export class WorkerPool
 
 		this.idMap = {}
 
-		this.bufferCount = 0
+		// this.bufferCount = 0
 
 		for ( let w = 0; w < this.workerCount; w += 1 )
 		{
@@ -133,11 +133,11 @@ export class WorkerPool
 
 	private buildBuffer( index: number ): Float32Array
 	{
-		const buffer = new Float32Array( this.sampleRate * 1.01 )
+		const buffer = new Float32Array( this.sampleRate )
 
 		let offset = 0
 
-		const pad = this.sampleRate * 0.07
+		const pad = this.sampleRate * 0.08
 
 		let incr = 0
 
@@ -183,11 +183,69 @@ export class WorkerPool
 			if ( offset >= buffer.length ) break
 		}
 
-		this.fadeBuffer( buffer )
+		const outBuffer = this.zeroCross( buffer )
 
-		// this.download( buffer )
+		// this.download( outBuffer, `zerocross` )
 
-		return buffer
+		return outBuffer
+	}
+
+	private zeroCross( buffer: Float32Array )
+	{
+		const samplesToCheck = Math.min( this.sampleRate * 0.05 - 1, buffer.length - 1 )
+
+		let start = undefined
+
+		let end = undefined
+
+		for ( let i = 0; i < samplesToCheck; i += 1 )
+		{
+			if ( start === undefined )
+			{
+				const pre = buffer[ i ] === 0
+					? -1
+					: buffer[ i ] / Math.abs( buffer[ i ] )
+	
+				const post = buffer[ i + 1 ] === 0
+					? 1
+					: buffer[ i + 1 ] / Math.abs( buffer[ i + 1 ] )
+				
+				if ( pre < post )
+				{
+					start = i + 1
+				}
+			}
+
+			if ( end === undefined )
+			{
+				// - 2 because checking 1 before last
+				const index = buffer.length - 2 - i
+
+				const pre = buffer[ index ] === 0
+					? -1
+					: buffer[ index ] / Math.abs( buffer[ index ] )
+	
+				const post = buffer[ index + 1 ] === 0
+					? 1
+					: buffer[ index + 1 ] / Math.abs( buffer[ index + 1 ] )
+				
+				if ( pre < post )
+				{
+					end = index + 1
+				}
+			}
+
+			if ( start !== undefined && end !== undefined )
+			{
+				break
+			}
+		}
+
+		const e = end === undefined ? buffer.length - 1 : end
+
+		const s = start === undefined ? 0 : start
+
+		return buffer.subarray( s, e )
 	}
 
 	/**
@@ -195,33 +253,27 @@ export class WorkerPool
 	 * analyse data using program like audacity
 	 * float32, little-endian, 1 channel, (sample rate of output)
 	 * */
-	private download( buffer: ArrayBuffer )
+	/*
+	private download( buffer: ArrayBuffer, prefix = `` )
 	{
-		const saveByteArray = ( function () 
-		{
-			const a = document.createElement( `a` )
+		const a = document.createElement( `a` )
 
-			document.body.appendChild( a )
+		document.body.appendChild( a )
 
-			a.style.display = `none`
+		a.style.display = `none`
 
-			return ( data: BlobPart[], name: string ) => 
-			{
-				const blob = new Blob( data, { type: `octet/stream` } ),
-					url = window.URL.createObjectURL( blob )
+		const blob = new Blob( [ buffer ], { type: `octet/stream` } ),
+			url = window.URL.createObjectURL( blob )
 
-				a.href = url
+		a.href = url
 
-				a.download = name
+		a.download =`${prefix}-${this.bufferCount++}`.padStart( 4, `0` )
 
-				a.click()
+		a.click()
 
-				window.URL.revokeObjectURL( url )
-			}
-		}() )
-
-		saveByteArray( [ buffer ], `${this.bufferCount++}`.padStart( 4, `0` ) )
+		window.URL.revokeObjectURL( url )
 	}
+	*/
 	
 
 	/**
@@ -268,6 +320,7 @@ export class WorkerPool
 	 * at the beginning and fade out at the end
 	 */
 	
+	/*
 	private fadeBuffer( buffer: Float32Array )
 	{
 		const samples = this.sampleRate * 0.01
@@ -283,6 +336,7 @@ export class WorkerPool
 			buffer[ j ] = buffer[ j ] - ( buffer[ j ] * ( samples - i ) / samples )
 		}
 	}
+	*/
 	
 
 	public getWorker(): string | undefined
