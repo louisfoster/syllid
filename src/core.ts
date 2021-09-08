@@ -299,7 +299,7 @@ implements
 
 		await this.player.init()
 
-		this.workerPool = new WorkerPool( 4, this, this.player.sampleRate() )
+		this.workerPool = new WorkerPool( navigator.hardwareConcurrency ?? 2, this, this.player.sampleRate() )
 	}
 
 	public startStream( id: string ): void

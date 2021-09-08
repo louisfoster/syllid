@@ -42,10 +42,18 @@ export class RandomStream implements Stream, PathProvider
 				{
 					const items = this.provider.validatePlaylistResponse( response )
 
-					// amount of items returned is randomised
-					return ( items.length > 1 )
-						? items.slice( 0, this.randomInt( 1, items.length ) )
-						: items
+					if ( items.length === 0 )
+					{
+						this.count = 0
+
+						return items
+					}
+
+					const num = Math.min( this.count, items.length )
+
+					this.count -= num
+
+					return items.slice( 0, num )
 				}
 			},
 			this,
@@ -89,7 +97,7 @@ export class RandomStream implements Stream, PathProvider
 	{
 		if ( this.count > 0 ) return
 
-		this.count = this.randomInt( 0, 5 )
+		this.count = this.randomInt( 1, 30 )
 
 		this.location = this.endpoint
 
@@ -123,8 +131,6 @@ export class RandomStream implements Stream, PathProvider
 	public path(): string 
 	{
 		this.setFreshLocation()
-
-		this.count = this.count - 1
 
 		return this.core.nextID
 			? new URL( this.core.nextID, this.location ).toString()

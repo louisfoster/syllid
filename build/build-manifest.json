@@ -61,7 +61,7 @@
       ]
     },
     "randomStream.js": {
-      "bytes": 2514,
+      "bytes": 2604,
       "imports": [
         {
           "path": "streamCore.js",
@@ -87,7 +87,7 @@
       ]
     },
     "core.js": {
-      "bytes": 5445,
+      "bytes": 5478,
       "imports": [
         {
           "path": "liveStream.js",
@@ -154,7 +154,7 @@
           "bytesInOutput": 4569
         },
         "randomStream.js": {
-          "bytesInOutput": 1710
+          "bytesInOutput": 1737
         },
         "modules/opus-recorder/dist/decoder/decoderWorker.min.js": {
           "bytesInOutput": 205150
@@ -163,13 +163,13 @@
           "bytesInOutput": 2771
         },
         "core.js": {
-          "bytesInOutput": 3610
+          "bytesInOutput": 3641
         },
         "syllid.js": {
           "bytesInOutput": 687
         }
       },
-      "bytes": 234537
+      "bytes": 234595
     }
   }
 }
