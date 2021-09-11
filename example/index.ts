@@ -169,7 +169,7 @@ class App implements SyllidContextInterface
 
 	public onBuffering(): void
 	{
-		// not handled
+		console.log( `buffering` )
 	}
 
 	public onPlaying( id: string ): void

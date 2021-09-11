@@ -293,4 +293,9 @@ export class NormalStream implements Stream, PathProvider
 				}, 100 )
 			} )
 	}
+
+	public emitLength(): void
+	{
+		this.length()
+	}
 }

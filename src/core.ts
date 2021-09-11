@@ -379,4 +379,14 @@ implements
 	{
 		return this.player.channels
 	}
+
+	public emitLength( id: string ): void
+	{
+		const stream = this.streams[ id ]
+
+		if ( this.isNormalStream( stream ) )
+		{
+			stream.emitLength()
+		}
+	}
 }

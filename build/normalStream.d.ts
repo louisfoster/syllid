@@ -34,5 +34,6 @@ export declare class NormalStream implements Stream, PathProvider {
     start(): void;
     stop(): void;
     setPosition(position: number): void;
+    emitLength(): void;
 }
 //# sourceMappingURL=normalStream.d.ts.map

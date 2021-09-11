@@ -41,5 +41,6 @@ export declare class Syllid {
     addNormalStream(id: string, endpoint: string): this;
     stop(): this;
     setPosition(id: string, position: number): this;
+    emitStreamLength(id: string): this;
 }
 //# sourceMappingURL=syllid.d.ts.map

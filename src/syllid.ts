@@ -130,4 +130,11 @@ export class Syllid
 
 		return this
 	}
+
+	public emitStreamLength( id: string ): this
+	{
+		this.core.emitLength( id )
+
+		return this
+	}
 }

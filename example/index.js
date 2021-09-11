@@ -98,7 +98,7 @@ class App {
         }
     }
     onBuffering() {
-        // not handled
+        console.log(`buffering`);
     }
     onPlaying(id) {
         this.ui[id].setPlaying();

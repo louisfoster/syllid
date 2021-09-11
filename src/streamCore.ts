@@ -336,7 +336,7 @@ export class StreamCore implements Stream
 	{
 		if ( this.state !== State.buffering || this.segments.length < 3 ) return
 
-		this.state = State.buffering
+		this.state = State.running
 
 		this.handler.onStreamStart( this.id )
 	}
@@ -378,6 +378,8 @@ export class StreamCore implements Stream
 		this.state = State.buffering
 
 		this.checkNewSegments()
+
+		this.handler.onStreamBuffering( this.id )
 	}
 
 	public stop(): void

@@ -82,5 +82,6 @@ export declare class Core implements PlayerHandler, StreamHandler, StreamProvide
     addNormalStream(id: string, endpoint: string): void;
     setPosition(id: string, position: number): void;
     getChannels(): number;
+    emitLength(id: string): void;
 }
 //# sourceMappingURL=core.d.ts.map
