@@ -397,7 +397,7 @@ export class StreamCore implements Stream
 	{
 		return new Promise( resolve => 
 		{
-			const isRunning = this.state !== State.running
+			const isRunning = this.state === State.running
 	
 			if ( isRunning ) this.stop()
 	

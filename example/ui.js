@@ -148,7 +148,7 @@ export class UI {
         return `${this.toInterval(hour)}:${this.toInterval(min)}:${this.toInterval(sec)}`;
     }
     toInterval(value) {
-        return `${`${Math.floor(value)}`.padStart(2, `0`)}`;
+        return `${`${Math.round(value)}`.padStart(2, `0`)}`;
     }
     setSegmentPlaying(segmentID, position) {
         this.ui.playing.textContent = `Playing: ${segmentID}`;
